@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<title>mkpasswd</title>
+</head>
+<body>
+	<h1>mkpasswd</h1>
+<script src="app.js"></script>
+<script>
+// ServiceWorker登録
+if ('serviceWorker' in navigator) {
+	navigator.serviceWorker.register('serviceworker.js').then(function(registration) {
+		console.info('ServiceWorker registration successful with scope: ', registration.scope);
+	}).catch(function(err) {
+		console.error('ServiceWorker registration failed: ', err);
+	});
+}
+</script>
+</body>
+</html>
