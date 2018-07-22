@@ -1,7 +1,6 @@
 module Mkpasswd where
 
 import Prelude
-import Control.Bind          ( join )
 import Data.Array            ( concat
                              , (..)
                              , length
@@ -17,7 +16,7 @@ import Data.Array            ( concat
 import Data.Char             ( fromCharCode )
 import Data.Either           ( Either(..) )
 import Data.Foldable         ( sum )
-import Data.Maybe            ( Maybe(..), fromMaybe )
+import Data.Maybe            ( fromMaybe )
 import Data.String.CodeUnits ( fromCharArray )
 import Data.Traversable      ( sequence )
 import Data.Tuple            ( Tuple(..), fst, snd )
