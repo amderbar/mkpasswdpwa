@@ -114,8 +114,8 @@ ui =
                 [ style "height: 100%"
                 , classes [ "flex" , "flex-column" ]
                 ]
-                [ headerNav
-                , HH.h1 [ classes [ "center" ] ] [ HH.text "Mkpasswd" ]
+                --[ headerNav
+                [ HH.h1 [ classes [ "center" ] ] [ HH.text "Mkpasswd" ]
                 , errorView state.errMsg
                 , policyFormRow PasswdLength "ながさ：" $ show state.policy.length
                 , policyFormRow DegitsNum    "すうじ：" $ show state.policy.degit
@@ -141,7 +141,8 @@ ui =
                                     ]
                                     [ HH.text labelTxt ]
                                  , HH.input
-                                    [ HP.id_ inpIdStr
+                                    [ HP.type_ HP.InputNumber
+                                    , HP.id_ inpIdStr
                                     , classes [ "col", "col-8", "input" ]
                                     , HP.value currentValue
                                     , HE.onValueInput $ HE.input (UpdatePolicy feildType)
