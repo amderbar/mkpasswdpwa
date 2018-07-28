@@ -90,9 +90,9 @@ validatePolicy policy =
                   then Right target
                   else Left errMsg
           shouldBeAllPositive = arrayFrom >>> (all $ (<) 0)
-          shouldBeLongEnough policy =
-              let policyTotal  = sum $ arrayFrom policy
-                  doubleLength = 2 * policy.length
+          shouldBeLongEnough p =
+              let policyTotal  = sum $ arrayFrom p
+                  doubleLength = 2 * p.length
                in
                   policyTotal < doubleLength
 
