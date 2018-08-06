@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "amderbar",
+  "license": "MIT",
   "devDependencies": {
     "psc-package": "^0.3.2",
     "pulp": "^12.3.0",
