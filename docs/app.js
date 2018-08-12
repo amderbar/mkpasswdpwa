@@ -426,20 +426,20 @@ var PS = {};
   var compare = function (dict) {
       return dict.compare;
   };
-  var lessThan = function (dictOrd) {
+  var lessThanOrEq = function (dictOrd) {
       return function (a1) {
           return function (a2) {
               var v = compare(dictOrd)(a1)(a2);
-              if (v instanceof Data_Ordering.LT) {
-                  return true;
+              if (v instanceof Data_Ordering.GT) {
+                  return false;
               };
-              return false;
+              return true;
           };
       };
   };
   exports["Ord"] = Ord;
   exports["compare"] = compare;
-  exports["lessThan"] = lessThan;
+  exports["lessThanOrEq"] = lessThanOrEq;
   exports["ordInt"] = ordInt;
   exports["ordString"] = ordString;
   exports["ordChar"] = ordChar;
@@ -5465,6 +5465,17 @@ var PS = {};
       }
       var result = new Array(count);
       return result.fill(value);
+    };
+  };
+
+  var replicatePolyfill = function (count) {
+    return function (value) {
+      var result = [];
+      var n = 0;
+      for (var i = 0; i < count; i++) {
+        result[n++] = value;
+      }
+      return result;
     };
   };
 
@@ -10669,7 +10680,7 @@ var PS = {};
           return policyTotal < doubleLength;
       };
       var shouldBeAllPositive = function ($11) {
-          return Data_Foldable.all(Data_Foldable.foldableArray)(Data_HeytingAlgebra.heytingAlgebraBoolean)(Data_Ord.lessThan(Data_Ord.ordInt)(0))(arrayFrom($11));
+          return Data_Foldable.all(Data_Foldable.foldableArray)(Data_HeytingAlgebra.heytingAlgebraBoolean)(Data_Ord.lessThanOrEq(Data_Ord.ordInt)(0))(arrayFrom($11));
       };
       return Control_Bind.bind(Data_Either.bindEither)(Control_Bind.bind(Data_Either.bindEither)(Control_Applicative.pure(Data_Either.applicativeEither)(policy))(validate(shouldBeAllPositive)("policy should be all positive")))(validate(shouldBeLongEnough)("policy should be long enough"));
   };
