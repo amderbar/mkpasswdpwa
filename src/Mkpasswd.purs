@@ -94,7 +94,7 @@ validatePolicy policy =
               let policyTotal  = sum $ arrayFrom p
                   doubleLength = 2 * p.length
                in
-                  policyTotal < doubleLength
+                  policyTotal <= doubleLength
 
 shuffle :: forall a. Array a -> Effect (Array a)
 shuffle target = catMaybes <$> (shuffleInternal [] target)

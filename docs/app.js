@@ -10674,10 +10674,10 @@ var PS = {};
               };
           };
       };
-      var shouldBeLongEnough = function (policy1) {
-          var policyTotal = Data_Foldable.sum(Data_Foldable.foldableArray)(Data_Semiring.semiringInt)(arrayFrom(policy1));
-          var doubleLength = 2 * policy1.length | 0;
-          return policyTotal < doubleLength;
+      var shouldBeLongEnough = function (p) {
+          var policyTotal = Data_Foldable.sum(Data_Foldable.foldableArray)(Data_Semiring.semiringInt)(arrayFrom(p));
+          var doubleLength = 2 * p.length | 0;
+          return policyTotal <= doubleLength;
       };
       var shouldBeAllPositive = function ($11) {
           return Data_Foldable.all(Data_Foldable.foldableArray)(Data_HeytingAlgebra.heytingAlgebraBoolean)(Data_Ord.lessThanOrEq(Data_Ord.ordInt)(0))(arrayFrom($11));
