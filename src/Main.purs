@@ -2,24 +2,31 @@ module Main where
 
 import Prelude
 import Mkpasswd                  (mkpasswd, PasswdPolicy, defaultPolicy)
---import Data.Generic              (class Generic, gshow)
+import Data.Generic.Rep          (class Generic)
+import Data.Generic.Rep.Show     (genericShow)
 import Data.Maybe                (Maybe(..))
 import Data.Either               (Either(..), note)
+import Data.Foldable             (oneOf)
 import Data.Int                  (fromString)
 import Data.String.CodePoints    (length)
 import Effect                    (Effect)
-import Effect.Aff                (Aff)
+import Effect.Aff                (Aff, launchAff_)
+import Effect.Class              (liftEffect)
+import Effect.Console            (log)
 import Halogen                 as H
 import Halogen.Aff             as HA
 import Halogen.HTML            as HH
 import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver       (runUI)
+import Routing.Hash              (matches)
+import Routing.Match             (Match, lit, end)
 
 type State =
     { policy :: PasswdPolicy
     , passwd :: String
     , errMsg :: String
+    , route  :: RouteType
     }
 
 data FieldType
@@ -29,21 +36,14 @@ data FieldType
     | LowercaseNum
     | SymbolNum
 
-----Package generics does not exist in package set
---derive instance genericFieldType :: Generic FieldType
+derive instance genericFieldType :: Generic FieldType _
 instance showFieldType :: Show FieldType where
---    show = gShow
-    show PasswdLength = "PasswdLength"
-    show DegitsNum    = "DegitsNum"
-    show UppercaseNum = "UppercaseNum"
-    show LowercaseNum = "LowercaseNum"
-    show SymbolNum    = "SymbolNum"
+    show = genericShow
 
-data Query a = Regenerate a
-             | UpdatePolicy FieldType String a
-
-id :: forall a. a -> a
-id v = v
+data Query a
+    = ChangeRoute RouteType a
+    | Regenerate a
+    | UpdatePolicy FieldType String a
 
 classes :: forall a b. Array String -> HH.IProp ( "class" :: String | b) a
 classes = HP.classes <<< map HH.ClassName
@@ -56,14 +56,23 @@ headerNav =
     HH.nav
         [ classes [ "border", "flex-none", "flex", "justify-center" ] ]
         [ HH.a
-            [ classes [ "flex-auto", "border", "p1", "center" ] ]
+            [ classes [ "flex-auto", "border", "p1", "center" ]
+            , HP.href "#link/a"
+            ]
             [ HH.text "つくる" ]
         , HH.a
-            [ classes [ "flex-auto", "border", "p1", "center" ] ]
+            [ classes [ "flex-auto", "border", "p1", "center" ]
+            , HP.href "#link/b"
+            ]
             [ HH.text "しまう" ]
         ]
 
 eval :: Query ~> H.ComponentDSL State Query Void Aff
+eval (ChangeRoute newRoute next) = do
+    H.modify_ (_ { route = newRoute })
+    liftEffect $ log $ show newRoute
+    pure next
+
 eval (Regenerate next) = do
     state <- H.get
     newPasswd <- H.liftEffect $ mkpasswd state.policy
@@ -105,6 +114,7 @@ ui =
               { policy : defaultPolicy
               , passwd : ""
               , errMsg : ""
+              , route  : LinkA
               }
 
           --render :: forall m. State -> H.ComponentHTML Query () m
@@ -114,8 +124,8 @@ ui =
                 [ style "height: 100%"
                 , classes [ "flex" , "flex-column" ]
                 ]
-                --[ headerNav
-                [ HH.h1 [ classes [ "center" ] ] [ HH.text "Mkpasswd" ]
+                [ headerNav
+                , HH.h1 [ classes [ "center" ] ] [ HH.text "Mkpasswd" ]
                 , errorView state.errMsg
                 , policyFormRow PasswdLength "ながさ：" $ show state.policy.length
                 , policyFormRow DegitsNum    "すうじ：" $ show state.policy.degit
@@ -159,8 +169,23 @@ ui =
                                         [ HH.text error ]
                               else HH.text error
 
+data RouteType
+    = LinkA
+    | LinkB
+
+derive instance genericRouteType :: Generic RouteType _
+instance showRouteType :: Show RouteType where
+    show = genericShow
+
+menuRoute :: Match RouteType
+menuRoute = lit "link" *> oneOf
+    [ LinkA <$ lit "a"
+    , LinkB <$ lit "b"
+    ] <* end
 
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
-  runUI ui unit body
+  app <- runUI ui unit body
+  liftEffect $ matches menuRoute \_ newHash ->
+      launchAff_ $ app.query $ H.action $ ChangeRoute newHash
