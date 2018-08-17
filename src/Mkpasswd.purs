@@ -3,6 +3,7 @@ module Mkpasswd where
 import Prelude
 import Data.Array            ( concat
                              , (..)
+                             , null
                              , length
                              , elem
                              , all
@@ -16,7 +17,9 @@ import Data.Array            ( concat
 import Data.Char             ( fromCharCode )
 import Data.Either           ( Either(..) )
 import Data.Foldable         ( sum )
-import Data.Maybe            ( fromMaybe )
+import Data.Generic.Rep      ( class Generic )
+import Data.Generic.Rep.Show ( genericShow )
+import Data.Maybe            ( Maybe(..), fromMaybe )
 import Data.String.CodeUnits ( fromCharArray )
 import Data.Traversable      ( sequence )
 import Data.Tuple            ( Tuple(..), fst, snd )
@@ -25,25 +28,33 @@ import Effect.Random         ( randomInt )
 
 type PasswdPolicy =
     { length    :: Int
-    , degit     :: Int
-    , uppercase :: Int
-    , lowercase :: Int
-    , symbol    :: Int
+    , degit     :: Maybe Int
+    , uppercase :: Maybe Int
+    , lowercase :: Maybe Int
+    , symbol    :: Maybe Int
     }
 
 defaultPolicy :: PasswdPolicy
 defaultPolicy =
     { length   : 9
-    , degit    : 2
-    , uppercase: 2
-    , lowercase: 2
-    , symbol   : 1
+    , degit    : Just 2
+    , uppercase: Just 2
+    , lowercase: Just 2
+    , symbol   : Just 1
     }
 
-arrayFrom :: PasswdPolicy -> Array Int
-arrayFrom policy =
-    [ policy.length
+policyArray :: PasswdPolicy -> Array Int
+policyArray policy = catMaybes
+    [ Just policy.length
     , policy.degit
+    , policy.uppercase
+    , policy.lowercase
+    , policy.symbol
+    ]
+
+charTypePolicyArray :: PasswdPolicy -> Array Int
+charTypePolicyArray policy = catMaybes
+    [ policy.degit
     , policy.uppercase
     , policy.lowercase
     , policy.symbol
@@ -64,7 +75,7 @@ lowercaseAlphabetics = Tuple 0x61 0x7a
 symbols :: Array Int
 symbols = concat [ 0x21 .. 0x2e, 0x3a .. 0x40, 0x5b .. 0x60, 0x7b .. 0x7e ]
 
-mkpasswd :: PasswdPolicy -> Effect (Either String String)
+mkpasswd :: PasswdPolicy -> Effect (Either ErrorReason String)
 mkpasswd policy = sequence $ do
     valiedPolicy <- validatePolicy policy
     pure $ fromCharCodeArray <$> randomCharCodeArray valiedPolicy
@@ -72,29 +83,37 @@ mkpasswd policy = sequence $ do
           fromCharCodeArray = fromCharArray <<< mapMaybe fromCharCode
           randomCharCodeArray p =
               join $ shuffle <$> concat <$> sequence
-                [ randomCharCodes (asciiNum p) randomAscii
+                [ randomCharCodes (remainNum p) (randomRemain p)
                 , randomCharCodes (degitNum p) randomDegit
                 , randomCharCodes (uppercaseNum p) randomUpper
                 , randomCharCodes (lowercaseNum p) randomLower
                 , randomCharCodes (symbolNum p) randomSymbol
                 ]
 
-validatePolicy :: PasswdPolicy -> Either String PasswdPolicy
+data ErrorReason
+    = EmptyChars
+    | NoNegative
+    | TooShortLength
+
+derive instance genericErrorReason :: Generic ErrorReason _
+instance showErrorReason :: Show ErrorReason where
+    show = genericShow
+
+validatePolicy :: PasswdPolicy -> Either ErrorReason PasswdPolicy
 validatePolicy policy =
     pure policy
-    >>= validate shouldBeAllPositive "policy should be all positive"
-    >>= validate shouldBeLongEnough  "policy should be long enough"
+    >>= validate shouldNotBeNothingAll EmptyChars
+    >>= validate shouldBeAllPositive NoNegative
+    >>= validate shouldBeLongEnough  TooShortLength
     where
           validate rule errMsg target =
               if rule target
                   then Right target
                   else Left errMsg
-          shouldBeAllPositive = arrayFrom >>> (all $ (<=) 0)
+          shouldNotBeNothingAll = charTypePolicyArray >>> null >>> not
+          shouldBeAllPositive = policyArray >>> (all $ (<=) 0)
           shouldBeLongEnough p =
-              let policyTotal  = sum $ arrayFrom p
-                  doubleLength = 2 * p.length
-               in
-                  policyTotal <= doubleLength
+                  p.length >= (sum $ charTypePolicyArray p)
 
 shuffle :: forall a. Array a -> Effect (Array a)
 shuffle target = catMaybes <$> (shuffleInternal [] target)
@@ -108,35 +127,23 @@ shuffle target = catMaybes <$> (shuffleInternal [] target)
                  let brr = fromMaybe [] $ deleteAt idx arr
                  shuffleInternal bcc brr
 
-randomCharCodes :: Int -> (Effect Int) -> Effect (Array Int)
-randomCharCodes length randomChar = sequence $ replicate length randomChar
+randomCharCodes :: Maybe Int -> (Effect Int) -> Effect (Array Int)
+randomCharCodes length randomChar = sequence $ replicate (fromMaybe 0 length) randomChar
 
-asciiNum :: PasswdPolicy -> Int
-asciiNum policy = policy.length
-    - ( policy.degit
-      + policy.uppercase
-      + policy.lowercase
-      + policy.symbol
-      )
-
-degitNum :: PasswdPolicy -> Int
+degitNum :: PasswdPolicy -> Maybe Int
 degitNum policy = policy.degit
 
-uppercaseNum :: PasswdPolicy -> Int
+uppercaseNum :: PasswdPolicy -> Maybe Int
 uppercaseNum policy = policy.uppercase
 
-lowercaseNum :: PasswdPolicy -> Int
+lowercaseNum :: PasswdPolicy -> Maybe Int
 lowercaseNum policy = policy.lowercase
 
-symbolNum :: PasswdPolicy -> Int
+symbolNum :: PasswdPolicy -> Maybe Int
 symbolNum policy = policy.symbol
 
-randomAscii :: Effect Int
-randomAscii =
-    let top    = snd ascii
-        bottom = fst ascii
-     in
-        randomInt bottom top
+remainNum :: PasswdPolicy -> Maybe Int
+remainNum policy = Just $ policy.length - (sum $ charTypePolicyArray policy)
 
 randomDegit :: Effect Int
 randomDegit =
@@ -159,12 +166,26 @@ randomLower =
      in
         randomInt bottom top
 
-randomSymbol :: Effect Int
-randomSymbol =
+randomCharSelect :: Array Int -> Effect Int
+randomCharSelect popArr =
     let top    = snd ascii
         bottom = fst ascii
      in do
         chr <- randomInt bottom top
-        if elem chr symbols
+        if elem chr popArr
             then pure chr
-            else randomSymbol
+            else randomCharSelect popArr
+
+randomSymbol :: Effect Int
+randomSymbol = randomCharSelect symbols
+
+randomRemain :: PasswdPolicy -> Effect Int
+randomRemain = randomCharSelect <<< remainChars
+    where
+          remainChars p = concat $ catMaybes
+              [ map (constCharTypeArr degits) p.degit
+              , map (constCharTypeArr uppercaseAlphabetics) p.uppercase
+              , map (constCharTypeArr lowercaseAlphabetics) p.lowercase
+              , map (const symbols) p.symbol
+              ]
+          constCharTypeArr tpl = const $ (fst tpl) .. (snd tpl)
