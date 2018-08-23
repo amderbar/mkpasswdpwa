@@ -48,7 +48,11 @@ ui =
                 [ style "height: 100%"
                 , classes [ "flex" , "flex-column" ]
                 ]
-                [ HH.nav
+                --[ headerNav
+                [ HH.slot' cpMkpasswd unit Mk.ui unit absurd
+                ]
+          headerNav =
+                HH.nav
                     [ classes [ "border", "flex-none", "flex", "justify-center" ] ]
                     [ HH.a
                         [ classes [ "flex-auto", "border", "p1", "center" ]
@@ -61,8 +65,6 @@ ui =
                         ]
                         [ HH.text "しまう" ]
                     ]
-                , HH.slot' cpMkpasswd unit Mk.ui unit absurd
-                ]
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Void Aff
           eval (ChangeHash newHash next) = do
