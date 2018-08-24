@@ -1,27 +1,29 @@
 module Mkpasswd.Component.Mkpasswd where
 
 import Prelude
-import Mkpasswd                  (mkpasswd, defaultPolicy)
-import Mkpasswd.Halogen.Util     (classes)
-import Data.Generic.Rep          (class Generic)
-import Data.Generic.Rep.Show     (genericShow)
-import Data.Maybe                (Maybe(..), fromMaybe, isJust)
-import Data.Either               (Either(..), note)
-import Data.Int                  (fromString)
-import Data.String.CodePoints    (length)
-import Data.Tuple                (Tuple(..))
-import Effect.Aff                (Aff)
+import Mkpasswd                   (mkpasswd)
+import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, defaultLength, defaultPolicy)
+import Mkpasswd.Halogen.Util      (classes)
+import Data.Array                 ((!!), catMaybes)
+import Data.Generic.Rep           (class Generic)
+import Data.Generic.Rep.Show      (genericShow)
+import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
+import Data.Either                (Either(..), note)
+import Data.Int                   (fromString)
+import Data.String.CodePoints     (length)
+import Data.Tuple                 (Tuple(..))
+import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
 import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
 
 type State =
-    { policy :: { length    :: Int
-                , degit     :: Tuple Boolean Int
-                , uppercase :: Tuple Boolean Int
-                , lowercase :: Tuple Boolean Int
-                , symbol    :: Tuple Boolean Int
+    { length :: Int
+    , policy :: { degit     :: Tuple Boolean PasswdPolicy
+                , uppercase :: Tuple Boolean PasswdPolicy
+                , lowercase :: Tuple Boolean PasswdPolicy
+                , symbol    :: Tuple Boolean PasswdPolicy
                 }
     , passwd :: String
     , errMsg :: String
@@ -29,12 +31,12 @@ type State =
 
 data Query a
     = Regenerate a
+    | UpdateLength String a
     | UpdatePolicy FieldType String a
     | UpdateChecked FieldType Boolean a
 
 data FieldType
-    = PasswdLength
-    | DegitsNum
+    = DegitsNum
     | UppercaseNum
     | LowercaseNum
     | SymbolNum
@@ -56,16 +58,16 @@ ui =
           initialState =
               let d = defaultPolicy
                in
-                  { policy : { length    : d.length
-                             , degit     : tuple d.degit
-                             , uppercase : tuple d.uppercase
-                             , lowercase : tuple d.lowercase
-                             , symbol    : tuple d.symbol
+                  { length : defaultLength
+                  , policy : { degit     : tuple (d !! 0)
+                             , uppercase : tuple (d !! 1)
+                             , lowercase : tuple (d !! 2)
+                             , symbol    : tuple (d !! 3)
                              }
                   , passwd : ""
                   , errMsg : ""
                   }
-          tuple m = Tuple (isJust m) (fromMaybe 0 m)
+          tuple m = Tuple (isJust m) (fromMaybe (Tuple 0 []) m)
 
           render :: State -> H.ComponentHTML Query
           render state =
@@ -73,7 +75,7 @@ ui =
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
                     [ HH.h1 [ classes [ "center" ] ] [ HH.text "Mkpasswd" ]
                     , errorView state.errMsg
-                    , lengthFormRow PasswdLength "ながさ：" $ state.policy.length
+                    , lengthFormRow "ながさ：" $ state.length
                     , policyFormRow DegitsNum    "すうじ：" $ state.policy.degit
                     , policyFormRow UppercaseNum "英大字：" $ state.policy.uppercase
                     , policyFormRow LowercaseNum "英小字：" $ state.policy.lowercase
@@ -85,25 +87,23 @@ ui =
                         ]
                         [ HH.text "Generate new Password" ]
                     ]
-          lengthFormRow feildType labelTxt currVal =
-              let inpIdStr = show feildType
-               in
+          lengthFormRow labelTxt currVal =
                   HH.div
                      [ classes [ "flex-none", "clearfix" ] ]
                      [ HH.label
-                          [ HP.for inpIdStr
+                          [ HP.for "PassedLength"
                           , classes [ "pr1", "col", "col-4", "right-align", "align-baseline", "label" ]
                           ]
                           [ HH.text labelTxt ]
                      , HH.input
                           [ HP.type_ HP.InputNumber
-                          , HP.id_ inpIdStr
+                          , HP.id_ "PassedLength"
                           , classes [ "col", "col-3", "input" ]
                           , HP.value $ show currVal
-                          , HE.onValueInput $ HE.input (UpdatePolicy feildType)
+                          , HE.onValueInput $ HE.input UpdateLength
                           ]
                      ]
-          policyFormRow feildType labelTxt (Tuple currChk currVal) =
+          policyFormRow feildType labelTxt (Tuple currChk (Tuple currVal _)) =
               let inpIdStr = show feildType
                in
                   HH.div
@@ -147,18 +147,25 @@ ui =
           eval (Regenerate next) = do
               s <- H.get
               newPasswd <- H.liftEffect $
-                mkpasswd { length    : s.policy.length
-                         , degit     : toMaybe s.policy.degit
-                         , uppercase : toMaybe s.policy.uppercase
-                         , lowercase : toMaybe s.policy.lowercase
-                         , symbol    : toMaybe s.policy.symbol
-                         }
-              case newPasswd of
-                   Right pass -> H.modify_ (_ { errMsg = "", passwd = pass })
-                   Left  err  -> H.modify_ (_ { errMsg = show err  })
+                mkpasswd s.length $
+                  catMaybes [ toMaybe s.policy.degit
+                            , toMaybe s.policy.uppercase
+                            , toMaybe s.policy.lowercase
+                            , toMaybe s.policy.symbol
+                            ]
+              H.modify_ (_ { errMsg = "", passwd = newPasswd })
               pure next
               where
-                    toMaybe (Tuple flg num) = if flg then Just num else Nothing
+                    toMaybe (Tuple flg pol) = if flg then Just pol else Nothing
+          eval (UpdateLength value next) =
+             let newValue = note ("PasswdLength should be a Number") $ fromString value
+              in do
+                 s <- H.get
+                 case newValue of
+                      Right val -> H.modify_ (_ { errMsg = "", length = val })
+                      Left  err -> H.modify_ (_ { errMsg = err })
+                 pure next
+
           eval (UpdatePolicy feildType value next) =
               let newValue = note (show feildType <> " should be a Number") $ fromString value
                in do
@@ -168,12 +175,11 @@ ui =
                        Left  err -> H.modify_ (_ { errMsg = err })
                   pure next
                   where
-                        updateTuple (Tuple b _) n = Tuple b n
+                        updateTuple (Tuple b (Tuple _ a)) n = Tuple b (Tuple n a)
                         modifyPolicy f s v = do
                             let p = s.policy
                             let newPolicy =
                                   case f of
-                                     PasswdLength  -> p { length    = v }
                                      DegitsNum     -> p { degit     = updateTuple p.degit v }
                                      UppercaseNum  -> p { uppercase = updateTuple p.uppercase v }
                                      LowercaseNum  -> p { lowercase = updateTuple p.lowercase v }
@@ -189,7 +195,6 @@ ui =
                        let p = s.policy
                        let newPolicy =
                                case f of
-                                    PasswdLength  -> p
                                     DegitsNum     -> p { degit     = updateTuple p.degit v }
                                     UppercaseNum  -> p { uppercase = updateTuple p.uppercase v }
                                     LowercaseNum  -> p { lowercase = updateTuple p.lowercase v }
