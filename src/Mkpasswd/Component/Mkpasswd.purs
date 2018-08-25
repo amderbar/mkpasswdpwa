@@ -4,29 +4,52 @@ import Prelude
 import Mkpasswd                   (mkpasswd)
 import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, defaultLength, defaultPolicy)
 import Mkpasswd.Halogen.Util      (classes)
-import Data.Array                 ((!!), catMaybes)
+import Data.Array              as Arr
+import Data.Array                 ((!!), mapWithIndex, mapMaybe, replicate, zip)
+import Data.Char                  (fromCharCode)
+import Data.Foldable              (length)
 import Data.Generic.Rep           (class Generic)
 import Data.Generic.Rep.Show      (genericShow)
 import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
 import Data.Either                (Either(..), note)
 import Data.Int                   (fromString)
-import Data.String.CodePoints     (length)
-import Data.Tuple                 (Tuple(..))
+import Data.String.CodeUnits      (singleton)
+import Data.Tuple                 (Tuple(..), fst, snd, swap)
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
 import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
 
+type PolicyState = Tuple Int (Array (Tuple Boolean Int))
+
+policyState :: PasswdPolicy -> PolicyState
+policyState (Tuple n arr) = Tuple n $ zip (replicate (length arr) true) arr
+
+toMaybe :: forall a. Tuple Boolean a -> Maybe a
+toMaybe (Tuple flg pol) = if flg then Just pol else Nothing
+
+type AsciiPolicyState =
+            { degit     :: Tuple Boolean PolicyState
+            , uppercase :: Tuple Boolean PolicyState
+            , lowercase :: Tuple Boolean PolicyState
+            , symbol    :: Tuple Boolean PolicyState
+            }
+
+statePolicy :: AsciiPolicyState -> Array PasswdPolicy
+statePolicy p = mapMaybe (toMaybe <<< (map (map (mapMaybe toMaybe))))
+    [ p.degit
+    , p.uppercase
+    , p.lowercase
+    , p.symbol
+    ]
+
 type State =
     { length :: Int
-    , policy :: { degit     :: Tuple Boolean PasswdPolicy
-                , uppercase :: Tuple Boolean PasswdPolicy
-                , lowercase :: Tuple Boolean PasswdPolicy
-                , symbol    :: Tuple Boolean PasswdPolicy
-                }
-    , passwd :: String
-    , errMsg :: String
+    , policy :: AsciiPolicyState
+    , passwd :: Maybe String
+    , errMsg :: Maybe String
+    , custom :: Tuple Boolean Boolean
     }
 
 data Query a
@@ -34,6 +57,9 @@ data Query a
     | UpdateLength String a
     | UpdatePolicy FieldType String a
     | UpdateChecked FieldType Boolean a
+    | UpdateCharUse FieldType Int Boolean a
+    | UpdateCharUseAll FieldType Boolean a
+    | OpenCustom a
 
 data FieldType
     = DegitsNum
@@ -59,13 +85,14 @@ ui =
               let d = defaultPolicy
                in
                   { length : defaultLength
-                  , policy : { degit     : tuple (d !! 0)
-                             , uppercase : tuple (d !! 1)
-                             , lowercase : tuple (d !! 2)
-                             , symbol    : tuple (d !! 3)
+                  , policy : { degit     : tuple $ policyState <$> (d !! 0)
+                             , uppercase : tuple $ policyState <$> (d !! 1)
+                             , lowercase : tuple $ policyState <$> (d !! 2)
+                             , symbol    : tuple $ policyState <$> (d !! 3)
                              }
-                  , passwd : ""
-                  , errMsg : ""
+                  , passwd : Nothing
+                  , errMsg : Nothing
+                  , custom : Tuple false true
                   }
           tuple m = Tuple (isJust m) (fromMaybe (Tuple 0 []) m)
 
@@ -80,6 +107,9 @@ ui =
                     , policyFormRow UppercaseNum "英大字：" $ state.policy.uppercase
                     , policyFormRow LowercaseNum "英小字：" $ state.policy.lowercase
                     , policyFormRow SymbolNum    "きごう：" $ state.policy.symbol
+                    , if fst state.custom
+                          then selectAvailableSymbols SymbolNum (snd state.custom) state.policy.symbol
+                          else openSelect
                     , resultView state.passwd
                     , HH.button
                         [ classes [ "self-center", "p1" ]
@@ -132,38 +162,72 @@ ui =
                         , HH.text "含める"
                         ]
                      ]
-          resultView value =
-              if length value > 0
-                  then HH.p [ classes [ "h3", "center", "border", "rounded" ] ]
-                            [ HH.text value ]
-                  else HH.text value
-          errorView  error =
-              if length error > 0
-                  then HH.p [ classes [ "h3" , "center" , "border" , "border-red" ] ]
-                            [ HH.text error ]
-                  else HH.text error
+          selectAvailableSymbols feildType allChkFlg (Tuple _ (Tuple _ chars)) =
+              HH.div
+                 [ classes [ "flex-none", "clearfix" ] ]
+                 [ HH.div
+                     [ classes [ "sm-col", "sm-col-12", "md-col", "md-col-9", "lg-col", "lg-col-6" ] ]
+                     $ join [ (mapWithIndex (charCheck feildType) chars)
+                            , [ allCheck feildType allChkFlg ]
+                            ]
+                 ]
+          charCheck feildType idx (Tuple currChk chr) =
+              HH.label
+                 [ classes [ "col", "col-4", "center", "align-baseline", "label" ]
+                 ]
+                 [ HH.input
+                     [ HP.type_ HP.InputCheckbox
+                     , HP.checked currChk
+                     , HE.onChecked $ HE.input (UpdateCharUse feildType idx)
+                     ]
+                 , HH.text $ singleton $ fromMaybe '?' $ fromCharCode chr
+                 ]
+
+          allCheck feildType currChk =
+              HH.label
+                 [ classes [ "col", "col-4", "center", "align-baseline", "label" ]
+                 ]
+                 [ HH.input
+                     [ HP.type_ HP.InputCheckbox
+                     , HP.checked currChk
+                     , HE.onChecked $ HE.input (UpdateCharUseAll feildType)
+                     ]
+                 , HH.text $ if currChk then "ぜんぶ外す" else "ぜんぶ付ける"
+                 ]
+
+          openSelect =
+              HH.div
+                 [ classes [ "flex-none", "clearfix" ] ]
+                 [ HH.span [ classes [ "col", "col-4" ] ] [ HH.text "　" ]
+                 , HH.a [ classes [ "col", "col-3" ]
+                        , HE.onClick (HE.input_ OpenCustom)
+                        ]
+                        [ HH.text "▼ もっと細かく選ぶ" ]
+                 ]
+
+          resultView Nothing = HH.text ""
+          resultView (Just value) =
+              HH.p [ classes [ "h3", "center", "border", "rounded" ] ]
+                   [ HH.text value ]
+          errorView  Nothing = HH.text ""
+          errorView  (Just error) =
+              HH.p [ classes [ "h3" , "center" , "border" , "border-red" ] ]
+                   [ HH.text error ]
 
           eval :: Query ~> H.ComponentDSL State Query Void Aff
           eval (Regenerate next) = do
               s <- H.get
-              newPasswd <- H.liftEffect $
-                mkpasswd s.length $
-                  catMaybes [ toMaybe s.policy.degit
-                            , toMaybe s.policy.uppercase
-                            , toMaybe s.policy.lowercase
-                            , toMaybe s.policy.symbol
-                            ]
-              H.modify_ (_ { errMsg = "", passwd = newPasswd })
+              newPasswd <- H.liftEffect $ mkpasswd s.length (statePolicy s.policy)
+              H.modify_ (_ { errMsg = Nothing, passwd = Just newPasswd })
               pure next
-              where
-                    toMaybe (Tuple flg pol) = if flg then Just pol else Nothing
+
           eval (UpdateLength value next) =
              let newValue = note ("PasswdLength should be a Number") $ fromString value
               in do
                  s <- H.get
                  case newValue of
-                      Right val -> H.modify_ (_ { errMsg = "", length = val })
-                      Left  err -> H.modify_ (_ { errMsg = err })
+                      Right val -> H.modify_ (_ { errMsg = Nothing, length = val })
+                      Left  err -> H.modify_ (_ { errMsg = Just err })
                  pure next
 
           eval (UpdatePolicy feildType value next) =
@@ -172,31 +236,64 @@ ui =
                   state <- H.get
                   case newValue of
                        Right vli -> modifyPolicy feildType state vli
-                       Left  err -> H.modify_ (_ { errMsg = err })
+                       Left  err -> H.modify_ (_ { errMsg = Just err })
                   pure next
                   where
-                        updateTuple (Tuple b (Tuple _ a)) n = Tuple b (Tuple n a)
                         modifyPolicy f s v = do
                             let p = s.policy
                             let newPolicy =
                                   case f of
-                                     DegitsNum     -> p { degit     = updateTuple p.degit v }
-                                     UppercaseNum  -> p { uppercase = updateTuple p.uppercase v }
-                                     LowercaseNum  -> p { lowercase = updateTuple p.lowercase v }
-                                     SymbolNum     -> p { symbol    = updateTuple p.symbol v }
-                            H.modify_ (_ { errMsg = "", policy = newPolicy })
+                                     DegitsNum     -> p { degit     = updateFst v <$> p.degit }
+                                     UppercaseNum  -> p { uppercase = updateFst v <$> p.uppercase }
+                                     LowercaseNum  -> p { lowercase = updateFst v <$> p.lowercase }
+                                     SymbolNum     -> p { symbol    = updateFst v <$> p.symbol }
+                            H.modify_ (_ { errMsg = Nothing, policy = newPolicy })
           eval (UpdateChecked feildType flg next) = do
               state <- H.get
               modifyPolicy feildType state flg
               pure next
               where
-                    updateTuple (Tuple _ i) f = Tuple f i
                     modifyPolicy f s v = do
                        let p = s.policy
                        let newPolicy =
                                case f of
-                                    DegitsNum     -> p { degit     = updateTuple p.degit v }
-                                    UppercaseNum  -> p { uppercase = updateTuple p.uppercase v }
-                                    LowercaseNum  -> p { lowercase = updateTuple p.lowercase v }
-                                    SymbolNum     -> p { symbol    = updateTuple p.symbol v }
-                       H.modify_ (_ { errMsg = "", policy = newPolicy })
+                                    DegitsNum     -> p { degit     = updateFst v p.degit }
+                                    UppercaseNum  -> p { uppercase = updateFst v p.uppercase }
+                                    LowercaseNum  -> p { lowercase = updateFst v p.lowercase }
+                                    SymbolNum     -> p { symbol    = updateFst v p.symbol }
+                       H.modify_ (_ { errMsg = Nothing, policy = newPolicy })
+
+          eval (UpdateCharUse fieldType idx flg next) = do
+              s <- H.get
+              let ns = map (modifyAt idx (updateFst flg)) <$> s.policy.symbol
+              H.modify_ (_ { policy = s.policy { symbol = ns } })
+              pure next
+
+          eval (UpdateCharUseAll fieldType flg next) = do
+              s <- H.get
+              let ns = map (map (updateFst flg)) <$> s.policy.symbol
+              H.modify_ (_ { policy = s.policy { symbol = ns }
+                           , custom = updateSnd flg s.custom
+                           }
+                        )
+              pure next
+
+          eval (OpenCustom next) = do
+              s <- H.get
+              H.modify_ (_ { custom = updateFst true s.custom })
+              pure next
+
+modifyAt :: forall a. Int -> (a -> a) -> Array a -> Array a
+modifyAt i f a = fromMaybe a $ Arr.modifyAt i f a
+
+updateFst :: forall a b c. b -> Tuple a c -> Tuple b c
+updateFst n = modifyFst (const n)
+
+updateSnd :: forall a b c. b -> Tuple c a -> Tuple c b
+updateSnd n = modifySnd (const n)
+
+modifyFst :: forall a b c. (a -> b) -> Tuple a c -> Tuple b c
+modifyFst f = swap >>> modifySnd f >>> swap
+
+modifySnd :: forall a b c. (a -> b) -> Tuple c a -> Tuple c b
+modifySnd = map
