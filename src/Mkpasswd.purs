@@ -46,7 +46,7 @@ mkpasswd len pol =
     where
           fromCharCodeArray = fromCharArray <<< mapMaybe fromCharCode
           multiChoice n arr = sequence $ replicate n $ choice arr
-          mkpasscode p = catMaybes  <<< join <$> traverse (uncurry multiChoice) p
+          mkpasscode p = shuffle =<< (catMaybes <<< join) <$> traverse (uncurry multiChoice) p
 
 --validatePolicy :: Int -> PasswdPolicy -> Either ErrorReason (Tuple Int PasswdPolicy)
 --validatePolicy length policy =
