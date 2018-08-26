@@ -3,8 +3,9 @@ module Mkpasswd.Component.Mkpasswd where
 import Prelude
 import Mkpasswd                   (mkpasswd)
 import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, defaultLength, defaultPolicy)
+import Mkpasswd.Data.Array        (modifyAt)
+import Mkpasswd.Data.Tuple        (updateFst, updateSnd, modifyFst, modifySnd)
 import Mkpasswd.Halogen.Util      (classes)
-import Data.Array              as Arr
 import Data.Array                 ((!!), mapWithIndex, mapMaybe, replicate, zip)
 import Data.Char                  (fromCharCode)
 import Data.Foldable              (length)
@@ -14,7 +15,7 @@ import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
 import Data.Either                (Either(..), note)
 import Data.Int                   (fromString)
 import Data.String.CodeUnits      (singleton)
-import Data.Tuple                 (Tuple(..), fst, snd, swap)
+import Data.Tuple                 (Tuple(..), fst, snd)
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
@@ -282,18 +283,3 @@ ui =
               s <- H.get
               H.modify_ (_ { custom = updateFst true s.custom })
               pure next
-
-modifyAt :: forall a. Int -> (a -> a) -> Array a -> Array a
-modifyAt i f a = fromMaybe a $ Arr.modifyAt i f a
-
-updateFst :: forall a b c. b -> Tuple a c -> Tuple b c
-updateFst n = modifyFst (const n)
-
-updateSnd :: forall a b c. b -> Tuple c a -> Tuple c b
-updateSnd n = modifySnd (const n)
-
-modifyFst :: forall a b c. (a -> b) -> Tuple a c -> Tuple b c
-modifyFst f = swap >>> modifySnd f >>> swap
-
-modifySnd :: forall a b c. (a -> b) -> Tuple c a -> Tuple c b
-modifySnd = map
