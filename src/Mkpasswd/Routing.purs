@@ -9,20 +9,20 @@ import Effect.Aff                (Aff, launchAff_)
 import Effect.Class              (liftEffect)
 import Halogen                 as H
 import Routing.Hash              (matches)
-import Routing.Match             (Match, lit, end)
+import Routing.Match             (Match, lit, int, end)
 
 data RouteHash
-    = LinkA
-    | LinkB
+    = Index
+    | Store Int
 
 derive instance genericRouteHash :: Generic RouteHash _
 instance showRouteHash :: Show RouteHash where
     show = genericShow
 
 menuHash :: Match RouteHash
-menuHash = lit "link" *> oneOf
-    [ LinkA <$ lit "a"
-    , LinkB <$ lit "b"
+menuHash = oneOf
+    [ Store <$> (lit "store" *> int)
+    , pure Index
     ] <* end
 
 routing :: forall m a. (m Unit -> Aff a) -> (RouteHash -> Unit -> m Unit) -> Aff (Effect Unit)
