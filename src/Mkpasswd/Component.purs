@@ -16,7 +16,6 @@ import Data.List.Types             (toList)
 import Data.Maybe                  (Maybe(..), isJust, fromMaybe)
 import Effect.Aff                  (Aff)
 import Effect.Class                (liftEffect)
-import Effect.Console              (log)
 import Foreign                     (ForeignError(..), renderForeignError)
 import Halogen                     as H
 import Halogen.Component.ChildPath as HC
@@ -96,7 +95,6 @@ ui =
           eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Void Aff
           eval (ChangeHash newHash next) = do
               H.modify_ (_ { route = newHash })
-              liftEffect $ log $ show newHash
               pure next
           eval (Load next) = do
              ns <- H.liftEffect $ fetch wsKey
