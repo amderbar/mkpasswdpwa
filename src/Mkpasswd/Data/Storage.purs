@@ -18,4 +18,4 @@ fetch key = let e = ForeignError $ key <> ": No such key"
              <$> (WH.window >>= storage >>= WS.getItem key)
 
 save :: forall t. JSON.WriteForeign t => String -> t -> Effect Unit
-save key d = WH.window >>= WW.sessionStorage >>= WS.setItem key (JSON.writeJSON d)
+save key d = WH.window >>= storage >>= WS.setItem key (JSON.writeJSON d)
