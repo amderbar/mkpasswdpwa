@@ -13,6 +13,8 @@ import Routing.Match             (Match, lit, int, end)
 
 data RouteHash
     = Index
+    | List
+    | New
     | Store Int
 
 derive instance genericRouteHash :: Generic RouteHash _
@@ -22,6 +24,8 @@ instance showRouteHash :: Show RouteHash where
 menuHash :: Match RouteHash
 menuHash = oneOf
     [ Store <$> (lit "store" *> int)
+    , New <$ lit "new"
+    , List <$ lit "list"
     , pure Index
     ] <* end
 

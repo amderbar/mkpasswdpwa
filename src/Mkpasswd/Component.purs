@@ -3,6 +3,7 @@ module Mkpasswd.Component where
 import Prelude
 import Mkpasswd.Halogen.Util       (classes, style)
 import Mkpasswd.Component.Mkpasswd as Mk
+import Mkpasswd.Component.List     as Lt
 import Mkpasswd.Component.Store    as St
 import Mkpasswd.Data.Array         (updateAt)
 import Mkpasswd.Data.States        (FormData)
@@ -24,14 +25,17 @@ import Halogen.HTML                as HH
 import Halogen.HTML.Events         as HE
 import Halogen.HTML.Properties     as HP
 
-type ChildQuery = Mk.Query <\/> St.Query <\/> Const Void
-type Slot  = Unit \/ Unit \/ Void
+type ChildQuery = Mk.Query <\/> Lt.Query <\/> St.Query <\/> Const Void
+type Slot  = Unit \/ Unit \/ Unit \/ Void
 
 cpMkpasswd :: HC.ChildPath Mk.Query ChildQuery Unit Slot
 cpMkpasswd = HC.cp1
 
+cpList :: HC.ChildPath Lt.Query ChildQuery Unit Slot
+cpList = HC.cp2
+
 cpStore :: HC.ChildPath St.Query ChildQuery Unit Slot
-cpStore = HC.cp2
+cpStore = HC.cp3
 
 type State =
     { route  :: RouteHash
@@ -75,6 +79,8 @@ ui =
                       [ headerNav
                       , case rt of
                              Index   ->  HH.slot' cpMkpasswd unit Mk.ui unit absurd
+                             List    ->  HH.slot' cpList unit Lt.ui state.storage absurd
+                             New     ->  HH.slot' cpStore unit St.ui Nothing (HE.input Save)
                              Store i ->  HH.slot' cpStore unit St.ui (state.storage !! i) (HE.input Save)
                       ]
           headerNav =
@@ -87,7 +93,7 @@ ui =
                         [ HH.text "つくる" ]
                     , HH.a
                         [ classes [ "flex-auto", "border", "p1", "center" ]
-                        , HP.href "#store/0"
+                        , HP.href "#list"
                         ]
                         [ HH.text "しまう" ]
                     ]
