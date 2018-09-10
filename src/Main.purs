@@ -11,4 +11,4 @@ main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
   app <- runUI ui unit body
-  routing app.query \hash -> ChangeHash hash
+  routing app.query ChangeHash
