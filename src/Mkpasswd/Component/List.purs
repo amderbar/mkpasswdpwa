@@ -37,11 +37,12 @@ ui =
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
                     [ HH.h1 [ classes [ "center" ] ] [ HH.text "List" ]
                     , HH.a
-                        [ classes [ "col", "col-12" ]
+                        [ classes [ "mb1", "btn", "btn-primary", "self-center" ]
                         , HP.href $ "#new"
                         ]
                         [ HH.text "new" ]
-                    , HH.table_
+                    , HH.table
+                        [ classes [ "self-center", "col", "col-11", "border" ] ]
                         [ HH.thead_
                             [ HH.tr_
                                 [ HH.td_ []
@@ -55,16 +56,17 @@ ui =
                     ]
           accountRow i fd =
                 HH.tr_
-                    [ HH.td_
+                    [ HH.td
+                        [ classes [ "border-top" ] ]
                         [ HH.a
                             [ classes [ "col", "col-12" ]
                             , HP.href $ "#store/" <> (show i)
                             ]
                             [ HH.text "edit" ]
                         ]
-                    , HH.td_ [ HH.text fd.account ]
-                    , HH.td_ [ HH.text fd.passwd  ]
-                    , HH.td_ [ HH.text fd.note ]
+                    , HH.td [ classes [ "border-top" ] ] [ HH.text fd.account ]
+                    , HH.td [ classes [ "border-top" ] ] [ HH.text fd.passwd  ]
+                    , HH.td [ classes [ "border-top" ] ] [ HH.text fd.note ]
                     ]
 
           eval :: Query ~> H.ComponentDSL State Query Void Aff
