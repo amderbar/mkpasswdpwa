@@ -12774,6 +12774,15 @@ var PS = {};
       };
       return OpenCustom;
   })();
+  var CloseCustom = (function () {
+      function CloseCustom(value0) {
+          this.value0 = value0;
+      };
+      CloseCustom.create = function (value0) {
+          return new CloseCustom(value0);
+      };
+      return CloseCustom;
+  })();
   var toMaybe = function (v) {
       if (v.value0) {
           return new Data_Maybe.Just(v.value1);
@@ -12781,8 +12790,8 @@ var PS = {};
       return Data_Maybe.Nothing.value;
   };
   var statePolicy = function (p) {
-      return Data_Array.mapMaybe(function ($170) {
-          return toMaybe(Data_Functor.map(Data_Tuple.functorTuple)(Data_Functor.map(Data_Tuple.functorTuple)(Data_Array.mapMaybe(toMaybe)))($170));
+      return Data_Array.mapMaybe(function ($183) {
+          return toMaybe(Data_Functor.map(Data_Tuple.functorTuple)(Data_Functor.map(Data_Tuple.functorTuple)(Data_Array.mapMaybe(toMaybe)))($183));
       })([ p.degit, p.uppercase, p.lowercase, p.symbol ]);
   };
   var policyState = function (v) {
@@ -12801,7 +12810,7 @@ var PS = {};
       if (x instanceof SymbolNum) {
           return new Data_Generic_Rep.Inr(new Data_Generic_Rep.Inr(new Data_Generic_Rep.Inr(Data_Generic_Rep.NoArguments.value)));
       };
-      throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 71, column 8 - line 71, column 56: " + [ x.constructor.name ]);
+      throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 72, column 8 - line 72, column 56: " + [ x.constructor.name ]);
   }, function (x) {
       if (x instanceof Data_Generic_Rep.Inl) {
           return DegitsNum.value;
@@ -12815,7 +12824,7 @@ var PS = {};
       if (x instanceof Data_Generic_Rep.Inr && (x.value0 instanceof Data_Generic_Rep.Inr && x.value0.value0 instanceof Data_Generic_Rep.Inr)) {
           return SymbolNum.value;
       };
-      throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 71, column 8 - line 71, column 56: " + [ x.constructor.name ]);
+      throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 72, column 8 - line 72, column 56: " + [ x.constructor.name ]);
   });
   var showFieldType = new Data_Show.Show(Data_Generic_Rep_Show.genericShow(genericFieldType)(Data_Generic_Rep_Show.genericShowSum(Data_Generic_Rep_Show.genericShowConstructor(Data_Generic_Rep_Show.genericShowArgsNoArguments)(new Data_Symbol.IsSymbol(function () {
       return "DegitsNum";
@@ -12830,6 +12839,21 @@ var PS = {};
       var tuple = function (m) {
           return new Data_Tuple.Tuple(Data_Maybe.isJust(m), Data_Maybe.fromMaybe(new Data_Tuple.Tuple(0, [  ]))(m));
       };
+      var toggleSelect = function (flg) {
+          var t = (function () {
+              if (flg) {
+                  return "\u25b2 \u3084\u3081\u308b";
+              };
+              return "\u25bc \u3082\u3063\u3068\u7d30\u304b\u304f\u9078\u3076";
+          })();
+          var q = (function () {
+              if (flg) {
+                  return CloseCustom.create;
+              };
+              return OpenCustom.create;
+          })();
+          return Halogen_HTML_Elements.div([ Mkpasswd_Halogen_Util.classes([ "flex-none", "clearfix" ]) ])([ Halogen_HTML_Elements.span([ Mkpasswd_Halogen_Util.classes([ "col", "col-4" ]) ])([ Halogen_HTML_Core.text("\u3000") ]), Halogen_HTML_Elements.a([ Mkpasswd_Halogen_Util.classes([ "col", "col-3" ]), Halogen_HTML_Events.onClick(Halogen_HTML_Events.input_(q)) ])([ Halogen_HTML_Core.text(t) ]) ]);
+      };
       var resultView = function (v) {
           if (v instanceof Data_Maybe.Nothing) {
               return Halogen_HTML_Core.text("");
@@ -12837,7 +12861,7 @@ var PS = {};
           if (v instanceof Data_Maybe.Just) {
               return Halogen_HTML_Elements.p([ Mkpasswd_Halogen_Util.classes([ "h3", "center", "border", "rounded" ]) ])([ Halogen_HTML_Core.text(v.value0) ]);
           };
-          throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 209, column 11 - line 210, column 11: " + [ v.constructor.name ]);
+          throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 214, column 11 - line 215, column 11: " + [ v.constructor.name ]);
       };
       var policyFormRow = function (feildType) {
           return function (labelTxt) {
@@ -12847,7 +12871,6 @@ var PS = {};
               };
           };
       };
-      var openSelect = Halogen_HTML_Elements.div([ Mkpasswd_Halogen_Util.classes([ "flex-none", "clearfix" ]) ])([ Halogen_HTML_Elements.span([ Mkpasswd_Halogen_Util.classes([ "col", "col-4" ]) ])([ Halogen_HTML_Core.text("\u3000") ]), Halogen_HTML_Elements.a([ Mkpasswd_Halogen_Util.classes([ "col", "col-3" ]), Halogen_HTML_Events.onClick(Halogen_HTML_Events.input_(OpenCustom.create)) ])([ Halogen_HTML_Core.text("\u25bc \u3082\u3063\u3068\u7d30\u304b\u304f\u9078\u3076") ]) ]);
       var lengthFormRow = function (labelTxt) {
           return function (currVal) {
               return Halogen_HTML_Elements.div([ Mkpasswd_Halogen_Util.classes([ "flex-none", "clearfix" ]) ])([ Halogen_HTML_Elements.label([ Halogen_HTML_Properties["for"]("PassedLength"), Mkpasswd_Halogen_Util.classes([ "pr1", "col", "col-4", "right-align", "align-baseline", "label" ]) ])([ Halogen_HTML_Core.text(labelTxt) ]), Halogen_HTML_Elements.input([ Halogen_HTML_Properties.type_(Halogen_HTML_Core.inputTypeIsProp)(DOM_HTML_Indexed_InputType.InputNumber.value), Halogen_HTML_Properties.id_("PassedLength"), Mkpasswd_Halogen_Util.classes([ "col", "col-3", "input" ]), Halogen_HTML_Properties.value(Data_Show.show(Data_Show.showInt)(currVal)), Halogen_HTML_Events.onValueInput(Halogen_HTML_Events.input(UpdateLength.create)) ]) ]);
@@ -12870,15 +12893,15 @@ var PS = {};
               return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
                   return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(Effect_Aff.monadEffectAff))(Mkpasswd.mkpasswd(v1.length)(statePolicy(v1.policy))))(function (v2) {
                       return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v3) {
-                          var $66 = {};
-                          for (var $67 in v3) {
-                              if ({}.hasOwnProperty.call(v3, $67)) {
-                                  $66[$67] = v3[$67];
+                          var $71 = {};
+                          for (var $72 in v3) {
+                              if ({}.hasOwnProperty.call(v3, $72)) {
+                                  $71[$72] = v3[$72];
                               };
                           };
-                          $66.errMsg = Data_Maybe.Nothing.value;
-                          $66.passwd = new Data_Maybe.Just(v2);
-                          return $66;
+                          $71.errMsg = Data_Maybe.Nothing.value;
+                          $71.passwd = new Data_Maybe.Just(v2);
+                          return $71;
                       }))(function () {
                           return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
                       });
@@ -12891,30 +12914,30 @@ var PS = {};
                   return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)((function () {
                       if (newValue instanceof Data_Either.Right) {
                           return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-                              var $72 = {};
-                              for (var $73 in v2) {
-                                  if ({}.hasOwnProperty.call(v2, $73)) {
-                                      $72[$73] = v2[$73];
+                              var $77 = {};
+                              for (var $78 in v2) {
+                                  if ({}.hasOwnProperty.call(v2, $78)) {
+                                      $77[$78] = v2[$78];
                                   };
                               };
-                              $72.errMsg = Data_Maybe.Nothing.value;
-                              $72.length = newValue.value0;
-                              return $72;
+                              $77.errMsg = Data_Maybe.Nothing.value;
+                              $77.length = newValue.value0;
+                              return $77;
                           });
                       };
                       if (newValue instanceof Data_Either.Left) {
                           return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-                              var $76 = {};
-                              for (var $77 in v2) {
-                                  if ({}.hasOwnProperty.call(v2, $77)) {
-                                      $76[$77] = v2[$77];
+                              var $81 = {};
+                              for (var $82 in v2) {
+                                  if ({}.hasOwnProperty.call(v2, $82)) {
+                                      $81[$82] = v2[$82];
                                   };
                               };
-                              $76.errMsg = new Data_Maybe.Just(newValue.value0);
-                              return $76;
+                              $81.errMsg = new Data_Maybe.Just(newValue.value0);
+                              return $81;
                           });
                       };
-                      throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 229, column 18 - line 231, column 71: " + [ newValue.constructor.name ]);
+                      throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 234, column 18 - line 236, column 71: " + [ newValue.constructor.name ]);
                   })())(function () {
                       return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value1);
                   });
@@ -12926,57 +12949,57 @@ var PS = {};
                       return function (v1) {
                           var newPolicy = (function () {
                               if (f instanceof DegitsNum) {
-                                  var $83 = {};
-                                  for (var $84 in s.policy) {
-                                      if ({}.hasOwnProperty.call(s.policy, $84)) {
-                                          $83[$84] = s["policy"][$84];
+                                  var $88 = {};
+                                  for (var $89 in s.policy) {
+                                      if ({}.hasOwnProperty.call(s.policy, $89)) {
+                                          $88[$89] = s["policy"][$89];
                                       };
                                   };
-                                  $83.degit = Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Tuple.updateFst(v1))(s.policy.degit);
-                                  return $83;
+                                  $88.degit = Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Tuple.updateFst(v1))(s.policy.degit);
+                                  return $88;
                               };
                               if (f instanceof UppercaseNum) {
-                                  var $86 = {};
-                                  for (var $87 in s.policy) {
-                                      if ({}.hasOwnProperty.call(s.policy, $87)) {
-                                          $86[$87] = s["policy"][$87];
+                                  var $91 = {};
+                                  for (var $92 in s.policy) {
+                                      if ({}.hasOwnProperty.call(s.policy, $92)) {
+                                          $91[$92] = s["policy"][$92];
                                       };
                                   };
-                                  $86.uppercase = Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Tuple.updateFst(v1))(s.policy.uppercase);
-                                  return $86;
+                                  $91.uppercase = Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Tuple.updateFst(v1))(s.policy.uppercase);
+                                  return $91;
                               };
                               if (f instanceof LowercaseNum) {
-                                  var $89 = {};
-                                  for (var $90 in s.policy) {
-                                      if ({}.hasOwnProperty.call(s.policy, $90)) {
-                                          $89[$90] = s["policy"][$90];
+                                  var $94 = {};
+                                  for (var $95 in s.policy) {
+                                      if ({}.hasOwnProperty.call(s.policy, $95)) {
+                                          $94[$95] = s["policy"][$95];
                                       };
                                   };
-                                  $89.lowercase = Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Tuple.updateFst(v1))(s.policy.lowercase);
-                                  return $89;
+                                  $94.lowercase = Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Tuple.updateFst(v1))(s.policy.lowercase);
+                                  return $94;
                               };
                               if (f instanceof SymbolNum) {
-                                  var $92 = {};
-                                  for (var $93 in s.policy) {
-                                      if ({}.hasOwnProperty.call(s.policy, $93)) {
-                                          $92[$93] = s["policy"][$93];
+                                  var $97 = {};
+                                  for (var $98 in s.policy) {
+                                      if ({}.hasOwnProperty.call(s.policy, $98)) {
+                                          $97[$98] = s["policy"][$98];
                                       };
                                   };
-                                  $92.symbol = Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Tuple.updateFst(v1))(s.policy.symbol);
-                                  return $92;
+                                  $97.symbol = Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Tuple.updateFst(v1))(s.policy.symbol);
+                                  return $97;
                               };
-                              throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 246, column 35 - line 250, column 97: " + [ f.constructor.name ]);
+                              throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 251, column 35 - line 255, column 97: " + [ f.constructor.name ]);
                           })();
                           return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-                              var $95 = {};
-                              for (var $96 in v2) {
-                                  if ({}.hasOwnProperty.call(v2, $96)) {
-                                      $95[$96] = v2[$96];
+                              var $100 = {};
+                              for (var $101 in v2) {
+                                  if ({}.hasOwnProperty.call(v2, $101)) {
+                                      $100[$101] = v2[$101];
                                   };
                               };
-                              $95.errMsg = Data_Maybe.Nothing.value;
-                              $95.policy = newPolicy;
-                              return $95;
+                              $100.errMsg = Data_Maybe.Nothing.value;
+                              $100.policy = newPolicy;
+                              return $100;
                           });
                       };
                   };
@@ -12989,17 +13012,17 @@ var PS = {};
                       };
                       if (newValue instanceof Data_Either.Left) {
                           return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-                              var $101 = {};
-                              for (var $102 in v2) {
-                                  if ({}.hasOwnProperty.call(v2, $102)) {
-                                      $101[$102] = v2[$102];
+                              var $106 = {};
+                              for (var $107 in v2) {
+                                  if ({}.hasOwnProperty.call(v2, $107)) {
+                                      $106[$107] = v2[$107];
                                   };
                               };
-                              $101.errMsg = new Data_Maybe.Just(newValue.value0);
-                              return $101;
+                              $106.errMsg = new Data_Maybe.Just(newValue.value0);
+                              return $106;
                           });
                       };
-                      throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 238, column 19 - line 240, column 72: " + [ newValue.constructor.name ]);
+                      throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 243, column 19 - line 245, column 72: " + [ newValue.constructor.name ]);
                   })())(function () {
                       return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value2);
                   });
@@ -13011,57 +13034,57 @@ var PS = {};
                       return function (v1) {
                           var newPolicy = (function () {
                               if (f instanceof DegitsNum) {
-                                  var $109 = {};
-                                  for (var $110 in s.policy) {
-                                      if ({}.hasOwnProperty.call(s.policy, $110)) {
-                                          $109[$110] = s["policy"][$110];
+                                  var $114 = {};
+                                  for (var $115 in s.policy) {
+                                      if ({}.hasOwnProperty.call(s.policy, $115)) {
+                                          $114[$115] = s["policy"][$115];
                                       };
                                   };
-                                  $109.degit = Mkpasswd_Data_Tuple.updateFst(v1)(s.policy.degit);
-                                  return $109;
+                                  $114.degit = Mkpasswd_Data_Tuple.updateFst(v1)(s.policy.degit);
+                                  return $114;
                               };
                               if (f instanceof UppercaseNum) {
-                                  var $112 = {};
-                                  for (var $113 in s.policy) {
-                                      if ({}.hasOwnProperty.call(s.policy, $113)) {
-                                          $112[$113] = s["policy"][$113];
+                                  var $117 = {};
+                                  for (var $118 in s.policy) {
+                                      if ({}.hasOwnProperty.call(s.policy, $118)) {
+                                          $117[$118] = s["policy"][$118];
                                       };
                                   };
-                                  $112.uppercase = Mkpasswd_Data_Tuple.updateFst(v1)(s.policy.uppercase);
-                                  return $112;
+                                  $117.uppercase = Mkpasswd_Data_Tuple.updateFst(v1)(s.policy.uppercase);
+                                  return $117;
                               };
                               if (f instanceof LowercaseNum) {
-                                  var $115 = {};
-                                  for (var $116 in s.policy) {
-                                      if ({}.hasOwnProperty.call(s.policy, $116)) {
-                                          $115[$116] = s["policy"][$116];
+                                  var $120 = {};
+                                  for (var $121 in s.policy) {
+                                      if ({}.hasOwnProperty.call(s.policy, $121)) {
+                                          $120[$121] = s["policy"][$121];
                                       };
                                   };
-                                  $115.lowercase = Mkpasswd_Data_Tuple.updateFst(v1)(s.policy.lowercase);
-                                  return $115;
+                                  $120.lowercase = Mkpasswd_Data_Tuple.updateFst(v1)(s.policy.lowercase);
+                                  return $120;
                               };
                               if (f instanceof SymbolNum) {
-                                  var $118 = {};
-                                  for (var $119 in s.policy) {
-                                      if ({}.hasOwnProperty.call(s.policy, $119)) {
-                                          $118[$119] = s["policy"][$119];
+                                  var $123 = {};
+                                  for (var $124 in s.policy) {
+                                      if ({}.hasOwnProperty.call(s.policy, $124)) {
+                                          $123[$124] = s["policy"][$124];
                                       };
                                   };
-                                  $118.symbol = Mkpasswd_Data_Tuple.updateFst(v1)(s.policy.symbol);
-                                  return $118;
+                                  $123.symbol = Mkpasswd_Data_Tuple.updateFst(v1)(s.policy.symbol);
+                                  return $123;
                               };
-                              throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 260, column 32 - line 264, column 92: " + [ f.constructor.name ]);
+                              throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 265, column 32 - line 269, column 92: " + [ f.constructor.name ]);
                           })();
                           return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-                              var $121 = {};
-                              for (var $122 in v2) {
-                                  if ({}.hasOwnProperty.call(v2, $122)) {
-                                      $121[$122] = v2[$122];
+                              var $126 = {};
+                              for (var $127 in v2) {
+                                  if ({}.hasOwnProperty.call(v2, $127)) {
+                                      $126[$127] = v2[$127];
                                   };
                               };
-                              $121.errMsg = Data_Maybe.Nothing.value;
-                              $121.policy = newPolicy;
-                              return $121;
+                              $126.errMsg = Data_Maybe.Nothing.value;
+                              $126.policy = newPolicy;
+                              return $126;
                           });
                       };
                   };
@@ -13076,23 +13099,23 @@ var PS = {};
               return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
                   var ns = Data_Functor.map(Data_Tuple.functorTuple)(Data_Functor.map(Data_Tuple.functorTuple)(Mkpasswd_Data_Array.modifyAt(v.value1)(Mkpasswd_Data_Tuple.updateFst(v.value2))))(v1.policy.symbol);
                   return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-                      var $132 = {};
-                      for (var $133 in v2) {
-                          if ({}.hasOwnProperty.call(v2, $133)) {
-                              $132[$133] = v2[$133];
+                      var $137 = {};
+                      for (var $138 in v2) {
+                          if ({}.hasOwnProperty.call(v2, $138)) {
+                              $137[$138] = v2[$138];
                           };
                       };
-                      $132.policy = (function () {
-                          var $129 = {};
-                          for (var $130 in v1.policy) {
-                              if ({}.hasOwnProperty.call(v1.policy, $130)) {
-                                  $129[$130] = v1["policy"][$130];
+                      $137.policy = (function () {
+                          var $134 = {};
+                          for (var $135 in v1.policy) {
+                              if ({}.hasOwnProperty.call(v1.policy, $135)) {
+                                  $134[$135] = v1["policy"][$135];
                               };
                           };
-                          $129.symbol = ns;
-                          return $129;
+                          $134.symbol = ns;
+                          return $134;
                       })();
-                      return $132;
+                      return $137;
                   }))(function () {
                       return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value3);
                   });
@@ -13102,24 +13125,24 @@ var PS = {};
               return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
                   var ns = Data_Functor.map(Data_Tuple.functorTuple)(Data_Functor.map(Data_Tuple.functorTuple)(Data_Functor.map(Data_Functor.functorArray)(Mkpasswd_Data_Tuple.updateFst(v.value1))))(v1.policy.symbol);
                   return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-                      var $143 = {};
-                      for (var $144 in v2) {
-                          if ({}.hasOwnProperty.call(v2, $144)) {
-                              $143[$144] = v2[$144];
+                      var $148 = {};
+                      for (var $149 in v2) {
+                          if ({}.hasOwnProperty.call(v2, $149)) {
+                              $148[$149] = v2[$149];
                           };
                       };
-                      $143.policy = (function () {
-                          var $140 = {};
-                          for (var $141 in v1.policy) {
-                              if ({}.hasOwnProperty.call(v1.policy, $141)) {
-                                  $140[$141] = v1["policy"][$141];
+                      $148.policy = (function () {
+                          var $145 = {};
+                          for (var $146 in v1.policy) {
+                              if ({}.hasOwnProperty.call(v1.policy, $146)) {
+                                  $145[$146] = v1["policy"][$146];
                               };
                           };
-                          $140.symbol = ns;
-                          return $140;
+                          $145.symbol = ns;
+                          return $145;
                       })();
-                      $143.custom = Mkpasswd_Data_Tuple.updateSnd(v.value1)(v1.custom);
-                      return $143;
+                      $148.custom = Mkpasswd_Data_Tuple.updateSnd(v.value1)(v1.custom);
+                      return $148;
                   }))(function () {
                       return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value2);
                   });
@@ -13128,20 +13151,47 @@ var PS = {};
           if (v instanceof OpenCustom) {
               return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
                   return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-                      var $150 = {};
-                      for (var $151 in v2) {
-                          if ({}.hasOwnProperty.call(v2, $151)) {
-                              $150[$151] = v2[$151];
+                      var $155 = {};
+                      for (var $156 in v2) {
+                          if ({}.hasOwnProperty.call(v2, $156)) {
+                              $155[$156] = v2[$156];
                           };
                       };
-                      $150.custom = Mkpasswd_Data_Tuple.updateFst(true)(v1.custom);
-                      return $150;
+                      $155.custom = Mkpasswd_Data_Tuple.updateFst(true)(v1.custom);
+                      return $155;
                   }))(function () {
                       return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
                   });
               });
           };
-          throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 218, column 11 - line 218, column 63: " + [ v.constructor.name ]);
+          if (v instanceof CloseCustom) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
+                  var ns = Data_Functor.map(Data_Tuple.functorTuple)(Data_Functor.map(Data_Tuple.functorTuple)(Data_Functor.map(Data_Functor.functorArray)(Mkpasswd_Data_Tuple.updateFst(true))))(v1.policy.symbol);
+                  return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
+                      var $163 = {};
+                      for (var $164 in v2) {
+                          if ({}.hasOwnProperty.call(v2, $164)) {
+                              $163[$164] = v2[$164];
+                          };
+                      };
+                      $163.policy = (function () {
+                          var $160 = {};
+                          for (var $161 in v1.policy) {
+                              if ({}.hasOwnProperty.call(v1.policy, $161)) {
+                                  $160[$161] = v1["policy"][$161];
+                              };
+                          };
+                          $160.symbol = ns;
+                          return $160;
+                      })();
+                      $163.custom = Mkpasswd_Data_Tuple.updateFst(false)(Mkpasswd_Data_Tuple.updateSnd(true)(v1.custom));
+                      return $163;
+                  }))(function () {
+                      return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
+                  });
+              });
+          };
+          throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 223, column 11 - line 223, column 63: " + [ v.constructor.name ]);
       };
       var errorView = function (v) {
           if (v instanceof Data_Maybe.Nothing) {
@@ -13150,7 +13200,7 @@ var PS = {};
           if (v instanceof Data_Maybe.Just) {
               return Halogen_HTML_Elements.p([ Mkpasswd_Halogen_Util.classes([ "h3", "center", "border", "border-red" ]) ])([ Halogen_HTML_Core.text(v.value0) ]);
           };
-          throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 213, column 11 - line 214, column 11: " + [ v.constructor.name ]);
+          throw new Error("Failed pattern match at Mkpasswd.Component.Mkpasswd line 218, column 11 - line 219, column 11: " + [ v.constructor.name ]);
       };
       var charCheck = function (feildType) {
           return function (idx) {
@@ -13178,12 +13228,12 @@ var PS = {};
       };
       var render = function (state) {
           return Halogen_HTML_Elements.div([ Mkpasswd_Halogen_Util.classes([ "flex-auto", "flex", "flex-column" ]) ])([ Halogen_HTML_Elements.h1([ Mkpasswd_Halogen_Util.classes([ "center" ]) ])([ Halogen_HTML_Core.text("Mkpasswd") ]), errorView(state.errMsg), lengthFormRow("\u306a\u304c\u3055\uff1a")(state.length), policyFormRow(DegitsNum.value)("\u3059\u3046\u3058\uff1a")(state.policy.degit), policyFormRow(UppercaseNum.value)("\u82f1\u5927\u5b57\uff1a")(state.policy.uppercase), policyFormRow(LowercaseNum.value)("\u82f1\u5c0f\u5b57\uff1a")(state.policy.lowercase), policyFormRow(SymbolNum.value)("\u304d\u3054\u3046\uff1a")(state.policy.symbol), (function () {
-              var $169 = Data_Tuple.fst(state.custom);
-              if ($169) {
+              var $182 = Data_Tuple.fst(state.custom);
+              if ($182) {
                   return selectAvailableSymbols(SymbolNum.value)(Data_Tuple.snd(state.custom))(state.policy.symbol);
               };
-              return openSelect;
-          })(), resultView(state.passwd), Halogen_HTML_Elements.button([ Mkpasswd_Halogen_Util.classes([ "self-center", "p1" ]), Halogen_HTML_Events.onClick(Halogen_HTML_Events.input_(Regenerate.create)) ])([ Halogen_HTML_Core.text("Generate new Password") ]) ]);
+              return Halogen_HTML_Core.text("");
+          })(), toggleSelect(Data_Tuple.fst(state.custom)), resultView(state.passwd), Halogen_HTML_Elements.button([ Mkpasswd_Halogen_Util.classes([ "flex-none", "self-center", "p1" ]), Halogen_HTML_Events.onClick(Halogen_HTML_Events.input_(Regenerate.create)) ])([ Halogen_HTML_Core.text("Generate new Password") ]) ]);
       };
       return Halogen_Component.component(Halogen_HTML_Core.bifunctorHTML)({
           initialState: Data_Function["const"](initialState),
@@ -13202,6 +13252,7 @@ var PS = {};
   exports["UpdateCharUse"] = UpdateCharUse;
   exports["UpdateCharUseAll"] = UpdateCharUseAll;
   exports["OpenCustom"] = OpenCustom;
+  exports["CloseCustom"] = CloseCustom;
   exports["DegitsNum"] = DegitsNum;
   exports["UppercaseNum"] = UppercaseNum;
   exports["LowercaseNum"] = LowercaseNum;
@@ -13355,7 +13406,7 @@ var PS = {};
           if (v instanceof NoteTextarea) {
               return UpdateNote.create;
           };
-          throw new Error("Failed pattern match at Mkpasswd.Component.Store line 73, column 11 - line 73, column 49: " + [ v.constructor.name ]);
+          throw new Error("Failed pattern match at Mkpasswd.Component.Store line 82, column 11 - line 82, column 49: " + [ v.constructor.name ]);
       };
       var labelTxt = function (v) {
           if (v instanceof AccountInput) {
@@ -13367,7 +13418,7 @@ var PS = {};
           if (v instanceof NoteTextarea) {
               return "\u5099\u8003\uff1a";
           };
-          throw new Error("Failed pattern match at Mkpasswd.Component.Store line 70, column 11 - line 71, column 11: " + [ v.constructor.name ]);
+          throw new Error("Failed pattern match at Mkpasswd.Component.Store line 79, column 11 - line 80, column 11: " + [ v.constructor.name ]);
       };
       var txtForm = function (feildType) {
           return function (inpHtmlElm) {
@@ -13385,7 +13436,7 @@ var PS = {};
           };
       };
       var render = function (state) {
-          return Halogen_HTML_Elements.div([ Mkpasswd_Halogen_Util.classes([ "flex-auto", "flex", "flex-column" ]) ])([ Halogen_HTML_Elements.h1([ Mkpasswd_Halogen_Util.classes([ "center" ]) ])([ Halogen_HTML_Core.text("Store") ]), txtInput(AccountInput.value)(state.form.account), txtInput(Passwdinput.value)(state.form.passwd), txtArea(NoteTextarea.value)(state.form.note), Halogen_HTML_Elements.button([ Mkpasswd_Halogen_Util.classes([ "self-center", "p1" ]), Halogen_HTML_Events.onClick(Halogen_HTML_Events.input_(Save.create)) ])([ Halogen_HTML_Core.text("Save") ]) ]);
+          return Halogen_HTML_Elements.div([ Mkpasswd_Halogen_Util.classes([ "flex-auto", "flex", "flex-column" ]) ])([ Halogen_HTML_Elements.h1([ Mkpasswd_Halogen_Util.classes([ "center" ]) ])([ Halogen_HTML_Core.text("Store") ]), txtInput(AccountInput.value)(state.form.account), txtInput(Passwdinput.value)(state.form.passwd), txtArea(NoteTextarea.value)(state.form.note), Halogen_HTML_Elements.div([ Mkpasswd_Halogen_Util.classes([ "flex", "justify-center" ]) ])([ Halogen_HTML_Elements.a([ Mkpasswd_Halogen_Util.classes([ "btn", "btn-primary", "mr2" ]), Halogen_HTML_Properties.href("#list"), Halogen_HTML_Events.onClick(Halogen_HTML_Events.input_(Save.create)) ])([ Halogen_HTML_Core.text("Save") ]), Halogen_HTML_Elements.a([ Mkpasswd_Halogen_Util.classes([ "btn", "btn-primary", "bg-gray" ]), Halogen_HTML_Properties.href("#list") ])([ Halogen_HTML_Core.text("Cancel") ]) ]) ]);
       };
       var initialState = function (inp) {
           var f = Data_Maybe.fromMaybe(Mkpasswd_Data_States.initialForm)(inp);
@@ -13476,7 +13527,7 @@ var PS = {};
                   });
               });
           };
-          throw new Error("Failed pattern match at Mkpasswd.Component.Store line 102, column 11 - line 102, column 66: " + [ v.constructor.name ]);
+          throw new Error("Failed pattern match at Mkpasswd.Component.Store line 111, column 11 - line 111, column 66: " + [ v.constructor.name ]);
       };
       return Halogen_Component.component(Halogen_HTML_Core.bifunctorHTML)({
           initialState: initialState,
