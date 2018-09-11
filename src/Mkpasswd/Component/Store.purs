@@ -61,8 +61,9 @@ ui =
                     , txtInput AccountInput state.form.account
                     , txtInput Passwdinput state.form.passwd
                     , txtArea NoteTextarea state.form.note
-                    , HH.button
-                        [ classes [ "self-center", "p1" ]
+                    , HH.a
+                        [ classes [ "btn", "btn-primary", "self-center" ]
+                        , HP.href $ "#list"
                         , HE.onClick (HE.input_ Save)
                         ]
                         [ HH.text "Save" ]
