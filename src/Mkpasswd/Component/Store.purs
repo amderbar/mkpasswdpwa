@@ -61,11 +61,20 @@ ui =
                     , txtInput AccountInput state.form.account
                     , txtInput Passwdinput state.form.passwd
                     , txtArea NoteTextarea state.form.note
-                    , HH.button
-                        [ classes [ "self-center", "p1" ]
-                        , HE.onClick (HE.input_ Save)
+                    , HH.div
+                        [ classes [ "flex", "justify-center" ] ]
+                        [ HH.a
+                            [ classes [ "btn", "btn-primary", "mr2" ]
+                            , HP.href $ "#list"
+                            , HE.onClick (HE.input_ Save)
+                            ]
+                            [ HH.text "Save" ]
+                        , HH.a
+                            [ classes [ "btn", "btn-primary", "bg-gray" ]
+                            , HP.href $ "#list"
+                            ]
+                            [ HH.text "Cancel" ]
                         ]
-                        [ HH.text "Save" ]
                     ]
           labelTxt AccountInput  = "アカウントID："
           labelTxt Passwdinput   = "パスワード："
