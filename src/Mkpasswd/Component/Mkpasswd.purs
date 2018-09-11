@@ -61,6 +61,7 @@ data Query a
     | UpdateCharUse FieldType Int Boolean a
     | UpdateCharUseAll FieldType Boolean a
     | OpenCustom a
+    | CloseCustom a
 
 data FieldType
     = DegitsNum
@@ -110,7 +111,8 @@ ui =
                     , policyFormRow SymbolNum    "きごう：" $ state.policy.symbol
                     , if fst state.custom
                           then selectAvailableSymbols SymbolNum (snd state.custom) state.policy.symbol
-                          else openSelect
+                          else HH.text ""
+                    , toggleSelect $ fst state.custom
                     , resultView state.passwd
                     , HH.button
                         [ classes [ "flex-none", "self-center", "p1" ]
@@ -196,15 +198,18 @@ ui =
                  , HH.text $ if currChk then "ぜんぶ外す" else "ぜんぶ付ける"
                  ]
 
-          openSelect =
-              HH.div
-                 [ classes [ "flex-none", "clearfix" ] ]
-                 [ HH.span [ classes [ "col", "col-4" ] ] [ HH.text "　" ]
-                 , HH.a [ classes [ "col", "col-3" ]
-                        , HE.onClick (HE.input_ OpenCustom)
-                        ]
-                        [ HH.text "▼ もっと細かく選ぶ" ]
-                 ]
+          toggleSelect flg =
+              let q = if flg then CloseCustom else OpenCustom
+                  t = if flg then "▲ やめる" else "▼ もっと細かく選ぶ"
+               in
+                 HH.div
+                    [ classes [ "flex-none", "clearfix" ] ]
+                    [ HH.span [ classes [ "col", "col-4" ] ] [ HH.text "　" ]
+                    , HH.a [ classes [ "col", "col-3" ]
+                           , HE.onClick (HE.input_ q)
+                           ]
+                           [ HH.text t ]
+                    ]
 
           resultView Nothing = HH.text ""
           resultView (Just value) =
@@ -282,4 +287,13 @@ ui =
           eval (OpenCustom next) = do
               s <- H.get
               H.modify_ (_ { custom = updateFst true s.custom })
+              pure next
+
+          eval (CloseCustom next) = do
+              s <- H.get
+              let ns = map (map (updateFst true)) <$> s.policy.symbol
+              H.modify_ (_ { policy = s.policy { symbol = ns }
+                           , custom = updateFst false $ updateSnd true s.custom
+                           }
+                        )
               pure next
