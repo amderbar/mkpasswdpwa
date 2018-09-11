@@ -113,7 +113,7 @@ ui =
                           else openSelect
                     , resultView state.passwd
                     , HH.button
-                        [ classes [ "self-center", "p1" ]
+                        [ classes [ "flex-none", "self-center", "p1" ]
                         , HE.onClick (HE.input_ Regenerate)
                         ]
                         [ HH.text "Generate new Password" ]
