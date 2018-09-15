@@ -2,6 +2,7 @@ module Mkpasswd.Data.PasswdPolicy where
 
 import Prelude
 import Mkpasswd.Data.Ascii
+import Mkpasswd.Data.Tuple   ( (<+>) )
 import Control.Biapplicative ( bipure )
 import Control.Biapply       ( (<<*>>) )
 import Data.Array            ( (:)
@@ -27,10 +28,7 @@ defaultPolicy =
     , passwdPolicy 1 symbols
     ]
 
-addappend :: PasswdPolicy -> PasswdPolicy -> PasswdPolicy
-addappend a b = bipure (+) (<>) <<*>> a <<*>> b
 
-infixl 5 addappend as <+>
 
 sumPolicy :: Array PasswdPolicy -> PasswdPolicy
 sumPolicy polArr = foldl (<+>) (passwdPolicy 0 []) polArr
