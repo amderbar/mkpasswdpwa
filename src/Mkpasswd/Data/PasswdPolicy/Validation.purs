@@ -4,7 +4,6 @@ import Prelude
 import Mkpasswd.Data.PasswdPolicy
 import Control.Biapplicative      (bipure)
 import Data.Array                 (null)
-import Data.Foldable              (all)
 import Data.Generic.Rep           (class Generic)
 import Data.Generic.Rep.Show      (genericShow)
 import Data.Traversable           (traverse)
@@ -31,10 +30,6 @@ validate l p
     where requiredMinNumLengthChk n = chk OutOfRange (rangeRule 0 100) n
           charSetNonEmptyChk s = chk EmptyCharSet nonEmptyRule s
 
-type Rule = forall a e.
-    { rule :: a -> Boolean
-    , err  :: e
-    }
 
 chk e r v = if r v
     then pure unit
