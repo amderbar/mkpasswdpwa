@@ -3,7 +3,8 @@ module Mkpasswd.Pages.Mkpasswd where
 import Prelude
 import Mkpasswd                   (mkpasswd)
 import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, defaultLength, defaultPolicy)
-import Mkpasswd.Data.PasswdPolicy.Validation (validate, ErrorCode(..))
+import Mkpasswd.Data.PasswdPolicy.Validation (validate)
+import Mkpasswd.Data.Validation   (ErrorCode)
 import Mkpasswd.Data.Array        (modifyAt)
 import Mkpasswd.Data.Tuple        (updateFst, updateSnd, modifyFst, modifySnd)
 import Mkpasswd.Halogen.Util      (classes)

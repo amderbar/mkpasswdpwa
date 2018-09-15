@@ -1,7 +1,8 @@
 module Mkpasswd.Pages.Store where
 
 import Prelude
-import Mkpasswd.Data.States       (FormData, initialForm, ErrorCode(..), validate)
+import Mkpasswd.Data.States       (FormData, initialForm, validate)
+import Mkpasswd.Data.Validation   (ErrorCode)
 import Mkpasswd.Halogen.Util      (classes)
 import Data.Array                 (catMaybes)
 import Data.Either                (Either(..))

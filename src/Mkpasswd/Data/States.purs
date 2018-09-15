@@ -1,10 +1,9 @@
 module Mkpasswd.Data.States where
 
 import Prelude
-import Data.Generic.Rep          (class Generic)
-import Data.Generic.Rep.Show     (genericShow)
+import Mkpasswd.Data.Validation
 import Data.String               (length, null)
-import Data.Validation.Semigroup (V, invalid)
+import Data.Validation.Semigroup (V)
 
 type FormData =
     { account :: String
@@ -19,14 +18,6 @@ initialForm =
     , note   : ""
     }
 
-data ErrorCode
-    = ValueMissing
-    | OutOfRange
-
-derive instance genericErrorReason :: Generic ErrorCode _
-instance showErrorReason :: Show ErrorCode where
-    show = genericShow
-
 validate f
     =  chk ValueMissing requiredRule f.account
     *> chk ValueMissing requiredRule f.passwd
@@ -35,10 +26,4 @@ validate f
     *> chk OutOfRange (maxRule 1000) (length f.note)
     *> pure f
 
-chk e r v = if r v
-    then pure unit
-    else invalid [e]
-
 requiredRule = not null
-
-maxRule u x = x <= u
