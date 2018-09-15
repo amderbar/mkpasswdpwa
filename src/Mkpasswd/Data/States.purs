@@ -30,9 +30,9 @@ instance showErrorReason :: Show ErrorCode where
 validate f
     =  chk ValueMissing requiredRule f.account
     *> chk ValueMissing requiredRule f.passwd
-    *> chk OutOfRange (rangeRule 1 100) (length f.account)
-    *> chk OutOfRange (rangeRule 1 100) (length f.passwd)
-    *> chk OutOfRange (rangeRule 0 1000) (length f.note)
+    *> chk OutOfRange (maxRule 100) (length f.account)
+    *> chk OutOfRange (maxRule 100) (length f.passwd)
+    *> chk OutOfRange (maxRule 1000) (length f.note)
     *> pure f
 
 chk e r v = if r v
@@ -41,4 +41,4 @@ chk e r v = if r v
 
 requiredRule = not null
 
-rangeRule l u x = l <= x && x <= u
+maxRule u x = x <= u
