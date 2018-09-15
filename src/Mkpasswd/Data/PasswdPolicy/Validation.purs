@@ -20,6 +20,8 @@ validate l p
     where requiredMinNumLengthChk n = chk OutOfRange (rangeRule 0 100) n
           charSetNonEmptyChk s = chk EmptyCharSet nonEmptyRule s
 
+nonEmptyRule :: forall a. Array a -> Boolean
 nonEmptyRule = not null
 
+enoughLengthRule :: Int -> Array PasswdPolicy -> Boolean
 enoughLengthRule l p = minLength p <= l

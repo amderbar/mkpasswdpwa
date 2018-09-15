@@ -18,6 +18,7 @@ initialForm =
     , note   : ""
     }
 
+validate :: FormData -> V (Array ErrorCode) FormData
 validate f
     =  chk ValueMissing requiredRule f.account
     *> chk ValueMissing requiredRule f.passwd
@@ -26,4 +27,5 @@ validate f
     *> chk OutOfRange (maxRule 1000) (length f.note)
     *> pure f
 
+requiredRule :: String -> Boolean
 requiredRule = not null
