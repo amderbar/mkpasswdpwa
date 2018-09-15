@@ -3,6 +3,7 @@ module Mkpasswd.Component.Mkpasswd where
 import Prelude
 import Mkpasswd                   (mkpasswd)
 import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, defaultLength, defaultPolicy)
+import Mkpasswd.Data.PasswdPolicy.Validation (validate, ErrorCode(..))
 import Mkpasswd.Data.Array        (modifyAt)
 import Mkpasswd.Data.Tuple        (updateFst, updateSnd, modifyFst, modifySnd)
 import Mkpasswd.Halogen.Util      (classes)
@@ -15,7 +16,9 @@ import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
 import Data.Either                (Either(..), note)
 import Data.Int                   (fromString)
 import Data.String.CodeUnits      (singleton)
-import Data.Tuple                 (Tuple(..), fst, snd)
+import Data.Traversable           (traverse)
+import Data.Tuple                 (Tuple(..), fst, snd, uncurry)
+import Data.Validation.Semigroup  (V, toEither)
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
@@ -49,7 +52,7 @@ type State =
     { length :: Int
     , policy :: AsciiPolicyState
     , passwd :: Maybe String
-    , errMsg :: Maybe String
+    , errMsg :: Maybe (Array String)
     , custom :: Tuple Boolean Boolean
     }
 
@@ -103,7 +106,7 @@ ui =
                 HH.div
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
                     [ HH.h1 [ classes [ "center" ] ] [ HH.text "Mkpasswd" ]
-                    , errorView state.errMsg
+                    , errorView $ show <$> state.errMsg
                     , lengthFormRow "ながさ：" $ state.length
                     , policyFormRow DegitsNum    "すうじ：" $ state.policy.degit
                     , policyFormRow UppercaseNum "英大字：" $ state.policy.uppercase
@@ -223,8 +226,11 @@ ui =
           eval :: Query ~> H.ComponentDSL State Query Void Aff
           eval (Regenerate next) = do
               s <- H.get
-              newPasswd <- H.liftEffect $ mkpasswd s.length (statePolicy s.policy)
-              H.modify_ (_ { errMsg = Nothing, passwd = Just newPasswd })
+              let prm = validate s.length (statePolicy s.policy)
+              newPasswd <- H.liftEffect $ toEither <$> traverse (uncurry mkpasswd) prm
+              case newPasswd of
+                   Right p -> H.modify_ (_ { errMsg = Nothing, passwd = Just p })
+                   Left  e -> H.modify_ (_ { errMsg = Just (show <$> e) })
               pure next
 
           eval (UpdateLength value next) =
@@ -233,7 +239,7 @@ ui =
                  s <- H.get
                  case newValue of
                       Right val -> H.modify_ (_ { errMsg = Nothing, length = val })
-                      Left  err -> H.modify_ (_ { errMsg = Just err })
+                      Left  err -> H.modify_ (_ { errMsg = Just [err] })
                  pure next
 
           eval (UpdatePolicy feildType value next) =
@@ -242,7 +248,7 @@ ui =
                   state <- H.get
                   case newValue of
                        Right vli -> modifyPolicy feildType state vli
-                       Left  err -> H.modify_ (_ { errMsg = Just err })
+                       Left  err -> H.modify_ (_ { errMsg = Just [err] })
                   pure next
                   where
                         modifyPolicy f s v = do

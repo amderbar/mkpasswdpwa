@@ -28,7 +28,11 @@ defaultPolicy =
     , passwdPolicy 1 symbols
     ]
 
+requiredMinNum :: PasswdPolicy -> RequiredMinNum
+requiredMinNum = fst
 
+charSet :: PasswdPolicy -> Array CharCode
+charSet = snd
 
 sumPolicy :: Array PasswdPolicy -> PasswdPolicy
 sumPolicy polArr = foldl (<+>) (passwdPolicy 0 []) polArr
