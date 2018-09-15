@@ -1,4 +1,4 @@
-module Mkpasswd.Component.List where
+module Mkpasswd.Pages.List where
 
 import Prelude
 import Mkpasswd.Data.States       (FormData)

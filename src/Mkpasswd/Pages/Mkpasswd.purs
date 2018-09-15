@@ -1,4 +1,4 @@
-module Mkpasswd.Component.Mkpasswd where
+module Mkpasswd.Pages.Mkpasswd where
 
 import Prelude
 import Mkpasswd                   (mkpasswd)
