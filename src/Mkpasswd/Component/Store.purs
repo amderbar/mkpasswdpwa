@@ -1,20 +1,23 @@
 module Mkpasswd.Component.Store where
 
 import Prelude
-import Mkpasswd.Data.States       (FormData, initialForm)
+import Mkpasswd.Data.States       (FormData, initialForm, ErrorCode(..), validate)
 import Mkpasswd.Halogen.Util      (classes)
 import Data.Array                 (catMaybes)
+import Data.Either                (Either(..))
 import Data.Foldable              (length)
 import Data.Generic.Rep           (class Generic)
 import Data.Generic.Rep.Show      (genericShow)
 import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
 import Data.List                  (List(..))
+import Data.Validation.Semigroup  (toEither)
 import Effect.Aff                 (Aff)
 import Effect.Console             (log)
 import Halogen                 as H
 import Halogen.HTML            as HH
 import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
+import Routing.Hash               (setHash)
 
 type Input = Maybe FormData
 
@@ -22,6 +25,7 @@ data Message = SavePasswd FormData
 
 type State =
     { form  :: FormData
+    , error :: Maybe (Array String)
     }
 
 data FeildType
@@ -51,21 +55,23 @@ ui =
           initialState :: Input -> State
           initialState inp =
               let f = fromMaybe initialForm inp
-              in { form : f }
+              in { form : f
+                 , error: Nothing
+                 }
 
           render :: State -> H.ComponentHTML Query
           render state =
                 HH.div
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
                     [ HH.h1 [ classes [ "center" ] ] [ HH.text "Store" ]
+                    , errorView $ show <$> state.error
                     , txtInput AccountInput state.form.account
                     , txtInput Passwdinput state.form.passwd
                     , txtArea NoteTextarea state.form.note
                     , HH.div
                         [ classes [ "flex", "justify-center" ] ]
-                        [ HH.a
+                        [ HH.button
                             [ classes [ "btn", "btn-primary", "mr2" ]
-                            , HP.href $ "#list"
                             , HE.onClick (HE.input_ Save)
                             ]
                             [ HH.text "Save" ]
@@ -107,6 +113,10 @@ ui =
                         [ HH.text $ labelTxt feildType ]
                    , inpHtmlElm
                    ]
+          errorView  Nothing = HH.text ""
+          errorView  (Just error) =
+              HH.p [ classes [ "h3" , "center" , "border" , "border-red" ] ]
+                   [ HH.text error ]
 
           eval :: Query ~> H.ComponentDSL State Query Message Aff
           eval (UpdateAccount newVal next) = do
@@ -123,5 +133,9 @@ ui =
              pure next
           eval (Save next) = do
              s <- H.get
-             H.raise $ SavePasswd s.form
+             case (toEither $ validate s.form) of
+                  Right f -> do
+                     H.liftEffect $ setHash "#list"
+                     H.raise $ SavePasswd f
+                  Left  e -> H.modify_ (_ { error = Just (show <$> e) })
              pure next
