@@ -17,6 +17,7 @@ import Halogen                 as H
 import Halogen.HTML            as HH
 import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
+import Routing.Hash               (setHash)
 
 type Input = Maybe FormData
 
@@ -69,9 +70,8 @@ ui =
                     , txtArea NoteTextarea state.form.note
                     , HH.div
                         [ classes [ "flex", "justify-center" ] ]
-                        [ HH.a
+                        [ HH.button
                             [ classes [ "btn", "btn-primary", "mr2" ]
-                            , HP.href $ "#list"
                             , HE.onClick (HE.input_ Save)
                             ]
                             [ HH.text "Save" ]
@@ -134,6 +134,8 @@ ui =
           eval (Save next) = do
              s <- H.get
              case (toEither $ validate s.form) of
-                  Right f -> H.raise $ SavePasswd f
+                  Right f -> do
+                     H.liftEffect $ setHash "#list"
+                     H.raise $ SavePasswd f
                   Left  e -> H.modify_ (_ { error = Just (show <$> e) })
              pure next
