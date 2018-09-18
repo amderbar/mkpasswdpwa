@@ -4,7 +4,7 @@ import Prelude
 import Mkpasswd                   (mkpasswd)
 import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, defaultLength, defaultPolicy)
 import Mkpasswd.Data.PasswdPolicy.Validation (validate)
-import Mkpasswd.Data.Validation   (ErrorCode)
+import Mkpasswd.Data.Validation   (ErrorCode(..))
 import Mkpasswd.Data.Array        (modifyAt)
 import Mkpasswd.Data.Tuple        (updateFst, updateSnd, modifyFst, modifySnd)
 import Mkpasswd.Halogen.Util      (classes)
@@ -15,11 +15,11 @@ import Data.Generic.Rep           (class Generic)
 import Data.Generic.Rep.Show      (genericShow)
 import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
 import Data.Either                (Either(..), note)
-import Data.Int                   (fromString)
+import Data.Int                   (fromString, toNumber)
 import Data.String.CodeUnits      (singleton)
 import Data.Traversable           (traverse)
 import Data.Tuple                 (Tuple(..), fst, snd, uncurry)
-import Data.Validation.Semigroup  (V, toEither)
+import Data.Validation.Semigroup  (V, invalid, toEither)
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
@@ -136,6 +136,8 @@ ui =
                           [ HP.type_ HP.InputNumber
                           , HP.id_ "PassedLength"
                           , classes [ "col", "col-3", "input" ]
+                          , HP.min $ toNumber 0
+                          , HP.max $ toNumber 100
                           , HP.value $ show currVal
                           , HE.onValueInput $ HE.input UpdateLength
                           ]
@@ -154,6 +156,8 @@ ui =
                         [ HP.type_ HP.InputNumber
                         , HP.id_ inpIdStr
                         , classes [ "col", "col-3", "input" ]
+                        , HP.min $ toNumber 0
+                        , HP.max $ toNumber 100
                         , HP.disabled $ not currChk
                         , HP.value $ show currVal
                         , HE.onValueInput $ HE.input (UpdatePolicy feildType)
@@ -227,12 +231,16 @@ ui =
           eval :: Query ~> H.ComponentDSL State Query Void Aff
           eval (Regenerate next) = do
               s <- H.get
-              let prm = validate s.length (statePolicy s.policy)
-              newPasswd <- H.liftEffect $ toEither <$> traverse (uncurry mkpasswd) prm
+              newPasswd <- H.liftEffect $
+                  let vp = toEither $ validate s.length (statePolicy s.policy)
+                   in case vp of
+                           Right prm -> uncurry mkpasswdE prm
+                           Left  err -> pure $ Left err
               case newPasswd of
                    Right p -> H.modify_ (_ { errMsg = Nothing, passwd = Just p })
                    Left  e -> H.modify_ (_ { errMsg = Just (show <$> e) })
               pure next
+              where mkpasswdE l s = note [Unknown] <$> mkpasswd l s
 
           eval (UpdateLength value next) =
              let newValue = note ("PasswdLength should be a Number") $ fromString value

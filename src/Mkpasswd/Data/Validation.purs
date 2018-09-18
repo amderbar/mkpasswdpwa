@@ -10,6 +10,7 @@ data ErrorCode
     | ValueMissing
     | EmptyCharSet
     | TooShort
+    | Unknown
 
 derive instance genericErrorReason :: Generic ErrorCode _
 instance showErrorReason :: Show ErrorCode where
