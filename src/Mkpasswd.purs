@@ -1,12 +1,9 @@
 module Mkpasswd where
 
-import Prelude  (class Show, join, ($), (<$>), (<<<), (=<<))
+import Prelude  (join, ($), (<$>), (<<<), (=<<))
 import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, normalize)
 import Mkpasswd.Effect.Random     (choice, shuffle)
-import Data.Array            ( replicate, mapMaybe, catMaybes)
 import Data.Char             ( fromCharCode )
-import Data.Generic.Rep      ( class Generic )
-import Data.Generic.Rep.Show ( genericShow )
 import Data.Maybe            ( Maybe )
 import Data.String.CodeUnits ( fromCharArray )
 import Data.Traversable      ( sequence, traverse )
