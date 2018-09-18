@@ -7,17 +7,18 @@ import Data.Array            ( replicate, mapMaybe, catMaybes)
 import Data.Char             ( fromCharCode )
 import Data.Generic.Rep      ( class Generic )
 import Data.Generic.Rep.Show ( genericShow )
+import Data.Maybe            ( Maybe )
 import Data.String.CodeUnits ( fromCharArray )
 import Data.Traversable      ( sequence, traverse )
 import Data.Tuple            ( uncurry )
 import Data.Unfoldable       ( replicateA )
 import Effect                ( Effect )
 
-mkpasswd :: Int -> Array PasswdPolicy -> Effect String
+mkpasswd :: Int -> Array PasswdPolicy -> Effect (Maybe String)
 mkpasswd len pol =
     let policy = normalize len pol
-     in fromCharCodeArray <$> mkpasscode policy
+     in (fromCharCodeArray =<< _) <$> mkpasscode policy
     where
-          fromCharCodeArray = fromCharArray <<< mapMaybe fromCharCode
+          fromCharCodeArray a = fromCharArray <$> traverse fromCharCode a
           multiChoice n arr = replicateA n $ choice arr
-          mkpasscode p = shuffle =<< (catMaybes <<< join) <$> traverse (uncurry multiChoice) p
+          mkpasscode p = (traverse shuffle) =<< (sequence <<< join) <$> traverse (uncurry multiChoice) p
