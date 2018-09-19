@@ -1,8 +1,10 @@
-module Mkpasswd.Component.Mkpasswd where
+module Mkpasswd.Pages.Mkpasswd where
 
 import Prelude
 import Mkpasswd                   (mkpasswd)
 import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, defaultLength, defaultPolicy)
+import Mkpasswd.Data.PasswdPolicy.Validation (validate)
+import Mkpasswd.Data.Validation   (ErrorCode(..))
 import Mkpasswd.Data.Array        (modifyAt)
 import Mkpasswd.Data.Tuple        (updateFst, updateSnd, modifyFst, modifySnd)
 import Mkpasswd.Halogen.Util      (classes)
@@ -13,9 +15,11 @@ import Data.Generic.Rep           (class Generic)
 import Data.Generic.Rep.Show      (genericShow)
 import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
 import Data.Either                (Either(..), note)
-import Data.Int                   (fromString)
+import Data.Int                   (fromString, toNumber)
 import Data.String.CodeUnits      (singleton)
-import Data.Tuple                 (Tuple(..), fst, snd)
+import Data.Traversable           (traverse)
+import Data.Tuple                 (Tuple(..), fst, snd, uncurry)
+import Data.Validation.Semigroup  (V, invalid, toEither)
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
@@ -49,7 +53,7 @@ type State =
     { length :: Int
     , policy :: AsciiPolicyState
     , passwd :: Maybe String
-    , errMsg :: Maybe String
+    , errMsg :: Maybe (Array String)
     , custom :: Tuple Boolean Boolean
     }
 
@@ -103,7 +107,7 @@ ui =
                 HH.div
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
                     [ HH.h1 [ classes [ "center" ] ] [ HH.text "Mkpasswd" ]
-                    , errorView state.errMsg
+                    , errorView $ show <$> state.errMsg
                     , lengthFormRow "ながさ：" $ state.length
                     , policyFormRow DegitsNum    "すうじ：" $ state.policy.degit
                     , policyFormRow UppercaseNum "英大字：" $ state.policy.uppercase
@@ -132,6 +136,8 @@ ui =
                           [ HP.type_ HP.InputNumber
                           , HP.id_ "PassedLength"
                           , classes [ "col", "col-3", "input" ]
+                          , HP.min $ toNumber 0
+                          , HP.max $ toNumber 100
                           , HP.value $ show currVal
                           , HE.onValueInput $ HE.input UpdateLength
                           ]
@@ -150,6 +156,8 @@ ui =
                         [ HP.type_ HP.InputNumber
                         , HP.id_ inpIdStr
                         , classes [ "col", "col-3", "input" ]
+                        , HP.min $ toNumber 0
+                        , HP.max $ toNumber 100
                         , HP.disabled $ not currChk
                         , HP.value $ show currVal
                         , HE.onValueInput $ HE.input (UpdatePolicy feildType)
@@ -223,9 +231,16 @@ ui =
           eval :: Query ~> H.ComponentDSL State Query Void Aff
           eval (Regenerate next) = do
               s <- H.get
-              newPasswd <- H.liftEffect $ mkpasswd s.length (statePolicy s.policy)
-              H.modify_ (_ { errMsg = Nothing, passwd = Just newPasswd })
+              newPasswd <- H.liftEffect $
+                  let vp = toEither $ validate s.length (statePolicy s.policy)
+                   in case vp of
+                           Right prm -> uncurry mkpasswdE prm
+                           Left  err -> pure $ Left err
+              case newPasswd of
+                   Right p -> H.modify_ (_ { errMsg = Nothing, passwd = Just p })
+                   Left  e -> H.modify_ (_ { errMsg = Just (show <$> e) })
               pure next
+              where mkpasswdE l s = note [Unknown] <$> mkpasswd l s
 
           eval (UpdateLength value next) =
              let newValue = note ("PasswdLength should be a Number") $ fromString value
@@ -233,7 +248,7 @@ ui =
                  s <- H.get
                  case newValue of
                       Right val -> H.modify_ (_ { errMsg = Nothing, length = val })
-                      Left  err -> H.modify_ (_ { errMsg = Just err })
+                      Left  err -> H.modify_ (_ { errMsg = Just [err] })
                  pure next
 
           eval (UpdatePolicy feildType value next) =
@@ -242,7 +257,7 @@ ui =
                   state <- H.get
                   case newValue of
                        Right vli -> modifyPolicy feildType state vli
-                       Left  err -> H.modify_ (_ { errMsg = Just err })
+                       Left  err -> H.modify_ (_ { errMsg = Just [err] })
                   pure next
                   where
                         modifyPolicy f s v = do

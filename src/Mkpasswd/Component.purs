@@ -2,9 +2,9 @@ module Mkpasswd.Component where
 
 import Prelude
 import Mkpasswd.Halogen.Util       (classes, style)
-import Mkpasswd.Component.Mkpasswd as Mk
-import Mkpasswd.Component.List     as Lt
-import Mkpasswd.Component.Store    as St
+import Mkpasswd.Pages.Mkpasswd as Mk
+import Mkpasswd.Pages.List     as Lt
+import Mkpasswd.Pages.Store    as St
 import Mkpasswd.Data.Array         (updateAt)
 import Mkpasswd.Data.States        (FormData)
 import Mkpasswd.Data.Storage       (fetch, save)
