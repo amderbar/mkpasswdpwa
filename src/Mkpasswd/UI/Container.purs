@@ -1,14 +1,14 @@
-module Mkpasswd.Component where
+module Mkpasswd.UI.Container where
 
 import Prelude
 import Mkpasswd.Halogen.Util       (classes, style)
-import Mkpasswd.Pages.Mkpasswd as Mk
-import Mkpasswd.Pages.List     as Lt
-import Mkpasswd.Pages.Store    as St
+import Mkpasswd.UI.Pages.Mkpasswd as Mk
+import Mkpasswd.UI.Pages.List     as Lt
+import Mkpasswd.UI.Pages.Store    as St
 import Mkpasswd.Data.Array         (updateAt)
 import Mkpasswd.Data.States        (FormData)
 import Mkpasswd.Data.Storage       (fetch, save)
-import Mkpasswd.Routing            (RouteHash(..))
+import Mkpasswd.UI.Routing            (RouteHash(..))
 import Data.Array                  (snoc, (!!))
 import Data.Const                  (Const)
 import Data.Either                 (Either(..))

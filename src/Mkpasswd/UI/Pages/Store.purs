@@ -1,4 +1,4 @@
-module Mkpasswd.Pages.Store where
+module Mkpasswd.UI.Pages.Store where
 
 import Prelude
 import Mkpasswd.Data.States       (FormData, initialForm, validate)

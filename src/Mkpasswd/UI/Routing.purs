@@ -1,4 +1,4 @@
-module Mkpasswd.Routing where
+module Mkpasswd.UI.Routing where
 
 import Prelude
 import Data.Foldable             (oneOf)
