@@ -2,7 +2,7 @@ module Mkpasswd.UI.Pages.Store where
 
 import Prelude
 import Mkpasswd.Data.States       (FormData, initialForm, validate)
-import Mkpasswd.Data.Validation   (ErrorCode)
+import Mkpasswd.Data.Validation   (ErrorCode(..))
 import Mkpasswd.Halogen.Util      (classes)
 import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
 import Data.Array                 (catMaybes)
@@ -120,6 +120,12 @@ ui =
               HH.p [ classes [ "h3" , "center" , "border" , "border-red" ] ]
                    [ HH.text error ]
 
+          errorMsg OutOfRange   = "長過ぎます"
+          errorMsg ValueMissing = "入力してください"
+          errorMsg EmptyCharSet = "指定された文字種が空です"
+          errorMsg TooShort     = "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
+          errorMsg Unknown      = "なんかエラーになったんでリロードしてください"
+
           eval :: Query ~> H.ComponentDSL State Query Message Aff
           eval (UpdateAccount newVal next) = do
              s <- H.get
@@ -139,5 +145,5 @@ ui =
                   Right f -> do
                      H.liftEffect $ setHash $ routeHref List
                      H.raise $ SavePasswd f
-                  Left  e -> H.modify_ (_ { error = Just (show <$> e) })
+                  Left  e -> H.modify_ (_ { error = Just (errorMsg <$> e) })
              pure next

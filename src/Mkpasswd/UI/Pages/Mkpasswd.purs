@@ -228,6 +228,12 @@ ui =
               HH.p [ classes [ "h3" , "center" , "border" , "border-red" ] ]
                    [ HH.text error ]
 
+          errorMsg OutOfRange   = "長過ぎます"
+          errorMsg ValueMissing = "入力してください"
+          errorMsg EmptyCharSet = "指定された文字種が空です"
+          errorMsg TooShort     = "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
+          errorMsg Unknown      = "なんかエラーになったんでリロードしてください"
+
           eval :: Query ~> H.ComponentDSL State Query Void Aff
           eval (Regenerate next) = do
               s <- H.get
@@ -238,12 +244,12 @@ ui =
                            Left  err -> pure $ Left err
               case newPasswd of
                    Right p -> H.modify_ (_ { errMsg = Nothing, passwd = Just p })
-                   Left  e -> H.modify_ (_ { errMsg = Just (show <$> e) })
+                   Left  e -> H.modify_ (_ { errMsg = Just (errorMsg <$> e) })
               pure next
               where mkpasswdE l s = note [Unknown] <$> mkpasswd l s
 
           eval (UpdateLength value next) =
-             let newValue = note ("PasswdLength should be a Number") $ fromString value
+             let newValue = note ("長さには数値を入れてください") $ fromString value
               in do
                  s <- H.get
                  case newValue of
@@ -252,7 +258,12 @@ ui =
                  pure next
 
           eval (UpdatePolicy feildType value next) =
-              let newValue = note (show feildType <> " should be a Number") $ fromString value
+              let feildName = case feildType of
+                                   DegitsNum    -> "すうじ"
+                                   UppercaseNum -> "英大字"
+                                   LowercaseNum -> "英小字"
+                                   SymbolNum    -> "きごう"
+                  newValue  = note (feildName <> " should be a Number") $ fromString value
                in do
                   state <- H.get
                   case newValue of
