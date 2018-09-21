@@ -3,6 +3,7 @@ module Mkpasswd.UI.Pages.List where
 import Prelude
 import Mkpasswd.Data.States       (FormData)
 import Mkpasswd.Halogen.Util      (classes)
+import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
 import Data.Array                 (mapWithIndex)
 import Data.Maybe                 (Maybe(..))
 import Effect.Aff                 (Aff)
@@ -38,7 +39,7 @@ ui =
                     [ HH.h1 [ classes [ "center" ] ] [ HH.text "List" ]
                     , HH.a
                         [ classes [ "mb1", "btn", "btn-primary", "self-center" ]
-                        , HP.href $ "#new"
+                        , HP.href $ routeHref New
                         ]
                         [ HH.text "new" ]
                     , HH.table
@@ -60,7 +61,7 @@ ui =
                         [ classes [ "border-top" ] ]
                         [ HH.a
                             [ classes [ "col", "col-12" ]
-                            , HP.href $ "#store/" <> (show i)
+                            , HP.href $ routeHref (Store i)
                             ]
                             [ HH.text "edit" ]
                         ]

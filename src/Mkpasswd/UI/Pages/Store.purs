@@ -4,6 +4,7 @@ import Prelude
 import Mkpasswd.Data.States       (FormData, initialForm, validate)
 import Mkpasswd.Data.Validation   (ErrorCode)
 import Mkpasswd.Halogen.Util      (classes)
+import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
 import Data.Array                 (catMaybes)
 import Data.Either                (Either(..))
 import Data.Foldable              (length)
@@ -78,7 +79,7 @@ ui =
                             [ HH.text "Save" ]
                         , HH.a
                             [ classes [ "btn", "btn-primary", "bg-gray" ]
-                            , HP.href $ "#list"
+                            , HP.href $ routeHref List
                             ]
                             [ HH.text "Cancel" ]
                         ]
@@ -136,7 +137,7 @@ ui =
              s <- H.get
              case (toEither $ validate s.form) of
                   Right f -> do
-                     H.liftEffect $ setHash "#list"
+                     H.liftEffect $ setHash $ routeHref List
                      H.raise $ SavePasswd f
                   Left  e -> H.modify_ (_ { error = Just (show <$> e) })
              pure next

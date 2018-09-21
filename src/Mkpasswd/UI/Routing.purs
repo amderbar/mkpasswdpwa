@@ -21,6 +21,12 @@ derive instance genericRouteHash :: Generic RouteHash _
 instance showRouteHash :: Show RouteHash where
     show = genericShow
 
+routeHref :: RouteHash -> String
+routeHref  Index    = "#"
+routeHref  List     = "#list"
+routeHref  New      = "#new"
+routeHref (Store i) = "#store/" <> (show i)
+
 menuHash :: Match RouteHash
 menuHash = oneOf
     [ Store <$> (lit "store" *> int)
