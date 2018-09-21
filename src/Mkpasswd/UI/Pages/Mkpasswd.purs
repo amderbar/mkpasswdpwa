@@ -8,8 +8,10 @@ import Mkpasswd.Data.Validation   (ErrorCode(..))
 import Mkpasswd.Data.Array        (modifyAt)
 import Mkpasswd.Data.Tuple        (updateFst, updateSnd, modifyFst, modifySnd)
 import Mkpasswd.Halogen.Util      (classes)
+import Mkpasswd.UI.Components.MultiChkboxes as MC
 import Data.Array                 ((!!), mapWithIndex, mapMaybe, replicate, zip)
 import Data.Char                  (fromCharCode)
+import Data.Const                 (Const)
 import Data.Foldable              (length)
 import Data.Generic.Rep           (class Generic)
 import Data.Generic.Rep.Show      (genericShow)
@@ -22,9 +24,17 @@ import Data.Tuple                 (Tuple(..), fst, snd, uncurry)
 import Data.Validation.Semigroup  (V, invalid, toEither)
 import Effect.Aff                 (Aff)
 import Halogen                 as H
+import Halogen.Component.ChildPath as HC
+import Halogen.Data.Prism          (type (<\/>), type (\/))
 import Halogen.HTML            as HH
 import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
+
+type ChildQuery = MC.Query <\/> Const Void
+type Slot  = Unit \/ Void
+
+cpMultichk :: HC.ChildPath MC.Query ChildQuery Unit Slot
+cpMultichk = HC.cp1
 
 type PolicyState = Tuple Int (Array (Tuple Boolean Int))
 
@@ -62,8 +72,7 @@ data Query a
     | UpdateLength String a
     | UpdatePolicy FieldType String a
     | UpdateChecked FieldType Boolean a
-    | UpdateCharUse FieldType Int Boolean a
-    | UpdateCharUseAll FieldType Boolean a
+    | UpdateCharUse FieldType (Array (Tuple Boolean Int)) a
     | OpenCustom a
     | CloseCustom a
 
@@ -79,7 +88,7 @@ instance showFieldType :: Show FieldType where
 
 ui :: H.Component HH.HTML Query Unit Void Aff
 ui =
-  H.component
+  H.parentComponent
     { initialState: const initialState
     , render
     , eval
@@ -102,7 +111,7 @@ ui =
                   }
           tuple m = Tuple (isJust m) (fromMaybe (Tuple 0 []) m)
 
-          render :: State -> H.ComponentHTML Query
+          render :: State -> H.ParentHTML Query ChildQuery Slot Aff
           render state =
                 HH.div
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
@@ -114,7 +123,7 @@ ui =
                     , policyFormRow LowercaseNum "英小字：" $ state.policy.lowercase
                     , policyFormRow SymbolNum    "きごう：" $ state.policy.symbol
                     , if fst state.custom
-                          then selectAvailableSymbols SymbolNum (snd state.custom) state.policy.symbol
+                          then HH.slot' cpMultichk unit MC.ui (snd (snd state.policy.symbol)) $ HE.input (UpdateCharUse SymbolNum)
                           else HH.text ""
                     , toggleSelect $ fst state.custom
                     , resultView state.passwd
@@ -173,38 +182,6 @@ ui =
                         , HH.text "含める"
                         ]
                      ]
-          selectAvailableSymbols feildType allChkFlg (Tuple _ (Tuple _ chars)) =
-              HH.div
-                 [ classes [ "flex-none", "clearfix" ] ]
-                 [ HH.div
-                     [ classes [ "sm-col", "sm-col-12", "md-col", "md-col-9", "lg-col", "lg-col-6" ] ]
-                     $ join [ (mapWithIndex (charCheck feildType) chars)
-                            , [ allCheck feildType allChkFlg ]
-                            ]
-                 ]
-          charCheck feildType idx (Tuple currChk chr) =
-              HH.label
-                 [ classes [ "col", "col-4", "center", "align-baseline", "label" ]
-                 ]
-                 [ HH.input
-                     [ HP.type_ HP.InputCheckbox
-                     , HP.checked currChk
-                     , HE.onChecked $ HE.input (UpdateCharUse feildType idx)
-                     ]
-                 , HH.text $ singleton $ fromMaybe '?' $ fromCharCode chr
-                 ]
-
-          allCheck feildType currChk =
-              HH.label
-                 [ classes [ "col", "col-4", "center", "align-baseline", "label" ]
-                 ]
-                 [ HH.input
-                     [ HP.type_ HP.InputCheckbox
-                     , HP.checked currChk
-                     , HE.onChecked $ HE.input (UpdateCharUseAll feildType)
-                     ]
-                 , HH.text $ if currChk then "ぜんぶ外す" else "ぜんぶ付ける"
-                 ]
 
           toggleSelect flg =
               let q = if flg then CloseCustom else OpenCustom
@@ -234,7 +211,7 @@ ui =
           errorMsg TooShort     = "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
           errorMsg Unknown      = "なんかエラーになったんでリロードしてください"
 
-          eval :: Query ~> H.ComponentDSL State Query Void Aff
+          eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Void Aff
           eval (Regenerate next) = do
               s <- H.get
               newPasswd <- H.liftEffect $
@@ -295,19 +272,10 @@ ui =
                                     SymbolNum     -> p { symbol    = updateFst v p.symbol }
                        H.modify_ (_ { errMsg = Nothing, policy = newPolicy })
 
-          eval (UpdateCharUse fieldType idx flg next) = do
+          eval (UpdateCharUse fieldType chrs next) = do
               s <- H.get
-              let ns = map (modifyAt idx (updateFst flg)) <$> s.policy.symbol
+              let ns = updateSnd chrs <$> s.policy.symbol
               H.modify_ (_ { policy = s.policy { symbol = ns } })
-              pure next
-
-          eval (UpdateCharUseAll fieldType flg next) = do
-              s <- H.get
-              let ns = map (map (updateFst flg)) <$> s.policy.symbol
-              H.modify_ (_ { policy = s.policy { symbol = ns }
-                           , custom = updateSnd flg s.custom
-                           }
-                        )
               pure next
 
           eval (OpenCustom next) = do
