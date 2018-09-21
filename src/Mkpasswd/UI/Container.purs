@@ -1,14 +1,15 @@
-module Mkpasswd.Component where
+module Mkpasswd.UI.Container where
 
 import Prelude
 import Mkpasswd.Halogen.Util       (classes, style)
-import Mkpasswd.Pages.Mkpasswd as Mk
-import Mkpasswd.Pages.List     as Lt
-import Mkpasswd.Pages.Store    as St
+import Mkpasswd.UI.Pages.Mkpasswd as Mk
+import Mkpasswd.UI.Pages.List     as Lt
+import Mkpasswd.UI.Pages.Store    as St
+import Mkpasswd.UI.Routing         (RouteHash(..))
+import Mkpasswd.UI.Templates       (headerNav)
 import Mkpasswd.Data.Array         (updateAt)
 import Mkpasswd.Data.States        (FormData)
 import Mkpasswd.Data.Storage       (fetch, save)
-import Mkpasswd.Routing            (RouteHash(..))
 import Data.Array                  (snoc, (!!))
 import Data.Const                  (Const)
 import Data.Either                 (Either(..))
@@ -83,20 +84,6 @@ ui =
                              New     ->  HH.slot' cpStore unit St.ui Nothing (HE.input Save)
                              Store i ->  HH.slot' cpStore unit St.ui (state.storage !! i) (HE.input Save)
                       ]
-          headerNav =
-                HH.nav
-                    [ classes [ "border", "flex-none", "flex", "justify-center" ] ]
-                    [ HH.a
-                        [ classes [ "flex-auto", "border", "p1", "center" ]
-                        , HP.href "#"
-                        ]
-                        [ HH.text "つくる" ]
-                    , HH.a
-                        [ classes [ "flex-auto", "border", "p1", "center" ]
-                        , HP.href "#list"
-                        ]
-                        [ HH.text "しまう" ]
-                    ]
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Void Aff
           eval (ChangeHash newHash next) = do

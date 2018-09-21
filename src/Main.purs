@@ -1,8 +1,8 @@
 module Main where
 
 import Prelude
-import Mkpasswd.Routing          (routing)
-import Mkpasswd.Component        (ui, Query(..))
+import Mkpasswd.UI.Routing       (routing)
+import Mkpasswd.UI.Container     (ui, Query(..))
 import Effect                    (Effect)
 import Halogen.Aff             as HA
 import Halogen.VDom.Driver       (runUI)
