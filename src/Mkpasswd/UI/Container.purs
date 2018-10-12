@@ -90,11 +90,11 @@ ui =
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Void Aff
           eval (ChangeHash newHash next) = do
-              H.modify_ (_ { route = newHash })
-              pure next
+             H.modify_ (_ { route = newHash })
+             pure next
           eval (Mkpasswd p next) = do
-              H.modify_ (_ { passwd = p })
-              pure next
+             H.modify_ (_ { passwd = p })
+             pure next
           eval (Load next) = do
              ns <- H.liftEffect $ fetch wsKey
              case ns of

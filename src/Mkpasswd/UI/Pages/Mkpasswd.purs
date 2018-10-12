@@ -3,7 +3,7 @@ module Mkpasswd.UI.Pages.Mkpasswd where
 import Prelude
 import Data.Array                              ((!!), mapMaybe)
 import Data.Const                              (Const)
-import Data.Either                             (Either(..), note)
+import Data.Either                             (Either(..), note, hush)
 import Data.Int                                (toNumber)
 import Data.Maybe                              (Maybe(..), fromMaybe)
 import Data.Tuple                              (uncurry)
@@ -145,6 +145,7 @@ ui =
               case ep of
                    Right p -> H.modify_ (_ { errMsg = Nothing, passwd = Just p })
                    Left  e -> H.modify_ (_ { errMsg = Just (showErr <$> e) })
+              H.raise $ hush ep
               pure next
               where
                     mkpasswdE :: Int -> Array PasswdPolicy -> Effect (Either (Array ErrorCode) String)
