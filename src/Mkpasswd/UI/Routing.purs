@@ -1,4 +1,4 @@
-module Mkpasswd.Routing where
+module Mkpasswd.UI.Routing where
 
 import Prelude
 import Data.Foldable             (oneOf)
@@ -20,6 +20,12 @@ data RouteHash
 derive instance genericRouteHash :: Generic RouteHash _
 instance showRouteHash :: Show RouteHash where
     show = genericShow
+
+routeHref :: RouteHash -> String
+routeHref  Index    = "#"
+routeHref  List     = "#list"
+routeHref  New      = "#new"
+routeHref (Store i) = "#store/" <> (show i)
 
 menuHash :: Match RouteHash
 menuHash = oneOf
