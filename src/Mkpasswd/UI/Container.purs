@@ -8,7 +8,7 @@ import Mkpasswd.UI.Pages.Store    as St
 import Mkpasswd.UI.Routing         (RouteHash(..))
 import Mkpasswd.UI.Templates       (headerNav)
 import Mkpasswd.Data.Array         (updateAt)
-import Mkpasswd.Data.States        (FormData)
+import Mkpasswd.Data.States        (FormData, initialForm)
 import Mkpasswd.Data.Storage       (fetch, save)
 import Data.Array                  (snoc, (!!))
 import Data.Const                  (Const)
@@ -17,8 +17,8 @@ import Data.List                   (List(..))
 import Data.List.Types             (toList)
 import Data.Maybe                  (Maybe(..), isJust, fromMaybe)
 import Effect.Aff                  (Aff)
-import Effect.Class                (liftEffect)
-import Foreign                     (ForeignError(..), renderForeignError)
+import Foreign                     (ForeignError(..))
+--import Foreign                     (ForeignError(..), renderForeignError)
 import Halogen                     as H
 import Halogen.Component.ChildPath as HC
 import Halogen.Data.Prism          (type (<\/>), type (\/))
@@ -41,11 +41,13 @@ cpStore = HC.cp3
 type State =
     { route  :: RouteHash
     , storage:: Array FormData
+    , passwd :: Maybe String
     , error  :: List ForeignError
     }
 
 data Query a
     = ChangeHash RouteHash a
+    | Mkpasswd (Maybe String) a
     | Load a
     | Save St.Message a
 
@@ -67,6 +69,7 @@ ui =
           initialState =
               { route  : Index
               , storage: []
+              , passwd : Nothing
               , error  : Nil
               }
 
@@ -79,16 +82,20 @@ ui =
                       ]
                       [ headerNav
                       , case rt of
-                             Index   ->  HH.slot' cpMkpasswd unit Mk.ui unit absurd
+                             Index   ->  HH.slot' cpMkpasswd unit Mk.ui unit (HE.input Mkpasswd)
                              List    ->  HH.slot' cpList unit Lt.ui state.storage absurd
-                             New     ->  HH.slot' cpStore unit St.ui Nothing (HE.input Save)
+                             New     ->  HH.slot' cpStore unit St.ui (initialForm { passwd = _ } <$> state.passwd) (HE.input Save)
                              Store i ->  HH.slot' cpStore unit St.ui (state.storage !! i) (HE.input Save)
                       ]
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Void Aff
           eval (ChangeHash newHash next) = do
-              H.modify_ (_ { route = newHash })
-              pure next
+             H.modify_ (_ { route = newHash })
+             when (newHash == List) $ H.modify_ (_ { passwd = Nothing })
+             pure next
+          eval (Mkpasswd p next) = do
+             H.modify_ (_ { passwd = p })
+             pure next
           eval (Load next) = do
              ns <- H.liftEffect $ fetch wsKey
              case ns of
