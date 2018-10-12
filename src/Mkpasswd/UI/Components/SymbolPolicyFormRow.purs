@@ -9,9 +9,8 @@ import Halogen.Component.ChildPath          as HC
 import Halogen.Data.Prism                     (type (<\/>), type (\/))
 import Halogen.HTML                         as HH
 import Halogen.HTML.Events                  as HE
-import Halogen.HTML.Properties              as HP
 
-import Mkpasswd.Data.FieldType.Mkpasswd       (FieldType(..), labelTxt)
+import Mkpasswd.Data.FieldType.Mkpasswd       (FieldType)
 import Mkpasswd.Data.Switch                   (Switch)
 import Mkpasswd.Halogen.Util                  (classes)
 import Mkpasswd.UI.Components.PolicyFormRow as PolRow

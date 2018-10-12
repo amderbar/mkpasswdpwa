@@ -6,7 +6,6 @@ import Data.Int                                    (toNumber)
 import Data.Maybe                                  (Maybe(..), isJust)
 import DOM.HTML.Indexed.StepValue                  (StepValue(..))
 import Effect.Class                                (class MonadEffect)
-import Effect.Class.Console                        (logShow)
 import Halogen                                   as H
 import Halogen.Component.ChildPath               as HC
 import Halogen.Data.Prism                          (type (<\/>), type (\/))

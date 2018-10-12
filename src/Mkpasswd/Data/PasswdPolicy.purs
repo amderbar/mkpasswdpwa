@@ -1,10 +1,9 @@
 module Mkpasswd.Data.PasswdPolicy where
 
-import Prelude
-import Mkpasswd.Data.Ascii
+import Prelude               (($), (+), (-), (<>))
+import Mkpasswd.Data.Ascii   (CharCode, degits, lowercaseAlphabetics, symbols, uppercaseAlphabetics)
 import Data.Array            ((:), nub)
 import Data.Foldable         (foldl)
-import Data.Tuple            (Tuple, fst, snd)
 
 type PasswdPolicy =
    { requiredMinNum :: Int

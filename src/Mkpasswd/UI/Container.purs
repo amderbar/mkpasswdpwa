@@ -17,14 +17,13 @@ import Data.List                   (List(..))
 import Data.List.Types             (toList)
 import Data.Maybe                  (Maybe(..), isJust, fromMaybe)
 import Effect.Aff                  (Aff)
-import Foreign                     (ForeignError(..))
---import Foreign                     (ForeignError(..), renderForeignError)
+import Foreign                     (ForeignError)
+--import Foreign                     (ForeignError, renderForeignError)
 import Halogen                     as H
 import Halogen.Component.ChildPath as HC
 import Halogen.Data.Prism          (type (<\/>), type (\/))
 import Halogen.HTML                as HH
 import Halogen.HTML.Events         as HE
-import Halogen.HTML.Properties     as HP
 
 type ChildQuery = Mk.Query <\/> Lt.Query <\/> St.Query <\/> Const Void
 type Slot  = Unit \/ Unit \/ Unit \/ Void
