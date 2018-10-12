@@ -17,6 +17,7 @@ data RouteHash
     | New
     | Store Int
 
+derive instance eqRouteHash :: Eq RouteHash
 derive instance genericRouteHash :: Generic RouteHash _
 instance showRouteHash :: Show RouteHash where
     show = genericShow

@@ -8,7 +8,7 @@ import Mkpasswd.UI.Pages.Store    as St
 import Mkpasswd.UI.Routing         (RouteHash(..))
 import Mkpasswd.UI.Templates       (headerNav)
 import Mkpasswd.Data.Array         (updateAt)
-import Mkpasswd.Data.States        (FormData)
+import Mkpasswd.Data.States        (FormData, initialForm)
 import Mkpasswd.Data.Storage       (fetch, save)
 import Data.Array                  (snoc, (!!))
 import Data.Const                  (Const)
@@ -84,13 +84,14 @@ ui =
                       , case rt of
                              Index   ->  HH.slot' cpMkpasswd unit Mk.ui unit (HE.input Mkpasswd)
                              List    ->  HH.slot' cpList unit Lt.ui state.storage absurd
-                             New     ->  HH.slot' cpStore unit St.ui Nothing (HE.input Save)
+                             New     ->  HH.slot' cpStore unit St.ui (initialForm { passwd = _ } <$> state.passwd) (HE.input Save)
                              Store i ->  HH.slot' cpStore unit St.ui (state.storage !! i) (HE.input Save)
                       ]
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Void Aff
           eval (ChangeHash newHash next) = do
              H.modify_ (_ { route = newHash })
+             when (newHash == List) $ H.modify_ (_ { passwd = Nothing })
              pure next
           eval (Mkpasswd p next) = do
              H.modify_ (_ { passwd = p })

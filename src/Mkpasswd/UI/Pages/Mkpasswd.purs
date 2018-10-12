@@ -5,7 +5,7 @@ import Data.Array                              ((!!), mapMaybe)
 import Data.Const                              (Const)
 import Data.Either                             (Either(..), note, hush)
 import Data.Int                                (toNumber)
-import Data.Maybe                              (Maybe(..), fromMaybe)
+import Data.Maybe                              (Maybe(..), fromMaybe, isJust)
 import Data.Tuple                              (uncurry)
 import Data.Validation.Semigroup               (toEither)
 import DOM.HTML.Indexed.StepValue              (StepValue(..))
@@ -16,6 +16,7 @@ import Halogen.Component.ChildPath           as HC
 import Halogen.Data.Prism                      (type (<\/>), type (\/))
 import Halogen.HTML                          as HH
 import Halogen.HTML.Events                   as HE
+import Halogen.HTML.Properties               as HP
 --import Halogen.HTML.Properties               as HP
 
 import Mkpasswd                                     (mkpasswd)
@@ -27,6 +28,7 @@ import Mkpasswd.Data.Switch                         (Switch)
 import Mkpasswd.Data.Switch                       as Switch
 import Mkpasswd.Data.Validation                     (ErrorCode(..))
 import Mkpasswd.Halogen.Util                        (classes)
+import Mkpasswd.UI.Routing                          (RouteHash(..), routeHref)
 import Mkpasswd.UI.Components.LabeledInputNumber  as LblInp
 import Mkpasswd.UI.Components.PolicyFormRow       as PolRow
 import Mkpasswd.UI.Components.SymbolPolicyFormRow as SymRow
@@ -127,6 +129,13 @@ ui =
                     , case state.passwd of
                            Nothing -> HH.text ""
                            Just v  -> HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text v ]
+                    , if isJust state.passwd
+                           then HH.a
+                                  [ classes [ "mb1", "btn", "btn-primary", "self-center" ]
+                                  , HP.href $ routeHref New
+                                  ]
+                                  [ HH.text "しまう" ]
+                           else HH.text ""
                     , HH.button
                         [ classes [ "flex-none", "self-center", "p1" ]
                         , HE.onClick (HE.input_ Regenerate)
