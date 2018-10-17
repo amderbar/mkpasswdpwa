@@ -13,7 +13,6 @@ import Halogen.HTML.Properties as HP
 import Mkpasswd.Data.Array        (modifyAt)
 import Mkpasswd.Data.Switch       (Switch)
 import Mkpasswd.Data.Switch    as Switch
-import Mkpasswd.Data.Tuple        (updateFst)
 import Mkpasswd.Halogen.Util      (classes)
 
 type Input =

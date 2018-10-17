@@ -1,7 +1,7 @@
 module Mkpasswd.Data.States where
 
-import Prelude
-import Mkpasswd.Data.Validation
+import Prelude                   (not, pure, (*>))
+import Mkpasswd.Data.Validation  (ErrorCode(..), chk, maxRule)
 import Data.String               (length, null)
 import Data.Validation.Semigroup (V)
 

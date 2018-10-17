@@ -1,6 +1,5 @@
 module Mkpasswd.Data.Ascii where
 
-import Prelude
 import Data.Array            ( concat
                              , (..)
                              )

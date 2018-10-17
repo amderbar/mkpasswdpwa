@@ -4,7 +4,7 @@ import Prelude
 import Data.Array                        (catMaybes)
 import Data.Int                          (fromString)
 import Data.Maybe                        (Maybe(..), fromMaybe)
-import DOM.HTML.Indexed.StepValue        (StepValue(..))
+import DOM.HTML.Indexed.StepValue        (StepValue)
 import Halogen                        as H
 import Halogen.HTML                   as HH
 import Halogen.HTML.Events            as HE
