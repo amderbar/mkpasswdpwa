@@ -1,12 +1,13 @@
 module Mkpasswd.UI.Pages.Mkpasswd where
 
 import Prelude
-import Data.Array                              ((!!), mapMaybe)
+import Data.Array                              ((!!), mapMaybe, null)
 import Data.Const                              (Const)
-import Data.Either                             (Either(..), note, hush)
-import Data.Int                                (toNumber)
+import Data.Either                             (Either(..), note, hush, either)
+import Data.Int                                (toNumber, fromString)
 import Data.Maybe                              (Maybe(..), fromMaybe, isJust)
-import Data.Tuple                              (uncurry)
+import Data.Tuple                              (Tuple, uncurry)
+import Data.Traversable                        (traverse)
 import Data.Validation.Semigroup               (toEither)
 import DOM.HTML.Indexed.StepValue              (StepValue(..))
 import Effect                                  (Effect)
@@ -21,7 +22,7 @@ import Halogen.HTML.Properties               as HP
 
 import Mkpasswd                                     (mkpasswd)
 import Mkpasswd.Data.Array                          (modifyAt)
-import Mkpasswd.Data.FieldType.Mkpasswd             (FieldType(..), labelTxt)
+import Mkpasswd.Data.FieldType.Mkpasswd             (FieldType(..))
 import Mkpasswd.Data.PasswdPolicy                   (PasswdPolicy, defaultLength, defaultPolicy)
 import Mkpasswd.Data.PasswdPolicy.Validation        (validate)
 import Mkpasswd.Data.Switch                         (Switch)
@@ -57,10 +58,10 @@ type Message =
     Maybe String
 
 type State =
-    { length :: Int
-    , policy :: Array (Switch PasswdPolicy)
+    { length :: String
+    , policy :: Array (Switch { requiredMinNum :: String, charSet :: Array Int})
     , passwd :: Maybe String
-    , errMsg :: Maybe (Array String)
+    , errMsg :: Array String
     }
 
 data Query a
@@ -79,12 +80,14 @@ ui =
     }
     where
           initialState :: Input -> State
-          initialState = const
-              { length : defaultLength
-              , policy : (Switch.toSwitch Switch.On) <$> defaultPolicy
-              , passwd : Nothing
-              , errMsg : Nothing
-              }
+          initialState =
+              let fp = (\p -> p { requiredMinNum = show p.requiredMinNum }) <$> defaultPolicy
+               in const
+                     { length : show defaultLength
+                     , policy : (Switch.toSwitch Switch.On) <$> fp
+                     , passwd : Nothing
+                     , errMsg : []
+                     }
 
           render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
@@ -98,34 +101,34 @@ ui =
                         , min: Just $ toNumber 0
                         , max: Just $ toNumber 100
                         , step: Any
-                        , value: Just state.length
+                        , value: state.length
                         }
                     , (\i -> HH.slot' cpPolRow (PRSlot 0) PolRow.ui i $ HE.input OnInputMinNum)
                         { fieldType: DegitsNum
                         , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 0)
-                        , requiredMinNum: (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 0)
+                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 0)
                         }
                     , (\i -> HH.slot' cpPolRow (PRSlot 1) PolRow.ui i $ HE.input OnInputMinNum)
                         { fieldType: UppercaseNum
                         , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 1)
-                        , requiredMinNum: (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 1)
+                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 1)
                         }
                     , (\i -> HH.slot' cpPolRow (PRSlot 2) PolRow.ui i $ HE.input OnInputMinNum)
                         { fieldType: LowercaseNum
                         , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 2)
-                        , requiredMinNum: (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 2)
+                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 2)
                         }
                     , (\i -> HH.slot' cpSymRow unit SymRow.ui i $ HE.input OnInputSymNum)
                         { fieldType: SymbolNum
                         , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 3)
-                        , requiredMinNum: (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 3)
+                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 3)
                         , isOpenMulChk: false
                         , allChk: true
                         , chars: (Switch.toSwitch Switch.On) <$> (fromMaybe [] $ (Switch.label >>> _.charSet) <$> (state.policy !! 3))
                         }
-                    , case state.errMsg of
-                           Nothing -> HH.text ""
-                           Just ae -> HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text $ show ae ]
+                    , if null state.errMsg
+                           then HH.text ""
+                           else HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text $ show state.errMsg ]
                     , case state.passwd of
                            Nothing -> HH.text ""
                            Just v  -> HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text v ]
@@ -147,50 +150,55 @@ ui =
           eval (Regenerate next) = do
               s <- H.get
               ep <- H.liftEffect $
-                  let vp = toEither $ validate s.length (mapMaybe Switch.toMaybe s.policy)
+                  let len = fromStrLength s.length
+                      pol = fromInputPolicyArray s.policy
+                      vp  = join $ validateE <$> len <*> pol
                    in case vp of
                            Right prm -> uncurry mkpasswdE prm
                            Left  err -> pure $ Left err
               case ep of
-                   Right p -> H.modify_ (_ { errMsg = Nothing, passwd = Just p })
-                   Left  e -> H.modify_ (_ { errMsg = Just (showErr <$> e) })
+                   Right p -> H.modify_ (_ { errMsg = [], passwd = Just p })
+                   Left  e -> H.modify_ (_ { errMsg = e })
               H.raise $ hush ep
               pure next
               where
-                    mkpasswdE :: Int -> Array PasswdPolicy -> Effect (Either (Array ErrorCode) String)
-                    mkpasswdE l a = note [Unknown] <$> mkpasswd l a
+                    fromStrMinNum :: forall p. { requiredMinNum :: String | p } -> Maybe { requiredMinNum :: Int | p }
+                    fromStrMinNum p = p { requiredMinNum = _ } <$> fromString p.requiredMinNum
+
+                    fromStrLength :: String -> Either (Array String) Int
+                    fromStrLength l = note ["長さには数値を入れてください"] $ fromString l
+
+                    fromInputPolicyArray :: Array (Switch { requiredMinNum :: String, charSet :: Array Int }) -> Either (Array String) (Array PasswdPolicy)
+                    fromInputPolicyArray p = note ["各文字種ごとの必要最低数には数値を入れてください"] $ traverse fromStrMinNum (mapMaybe Switch.toMaybe p)
+
+                    validateE :: Int -> Array PasswdPolicy -> Either (Array String) (Tuple Int (Array PasswdPolicy))
+                    validateE l p = either (\e -> Left $ showErr <$> e) (\v -> Right v) $ toEither $ validate l p
 
                     showErr :: ErrorCode -> String
-                    showErr OutOfRange   = "長過ぎます"
-                    showErr ValueMissing = "入力してください"
-                    showErr EmptyCharSet = "指定された文字種が空です"
-                    showErr TooShort     = "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
-                    showErr Unknown      = "なんかエラーになったんでリロードしてください"
+                    showErr = case _ of
+                                   OutOfRange   -> "長過ぎます"
+                                   ValueMissing -> "入力してください"
+                                   EmptyCharSet -> "指定された文字種が空です"
+                                   TooShort     -> "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
+                                   Unknown      -> "なんかエラーになったんでリロードしてください"
 
-          eval (OnInputLength mi next) =
-             let el = note ("長さには数値を入れてください") mi
-              in do
-                 s <- H.get
-                 case el of
-                      Right l -> H.modify_ (_ { errMsg = Nothing, length = l })
-                      Left  e -> H.modify_ (_ { errMsg = Just [e] })
-                 pure next
+                    mkpasswdE :: Int -> Array PasswdPolicy -> Effect (Either (Array String) String)
+                    mkpasswdE l a = note [showErr Unknown] <$> mkpasswd l a
+
+          eval (OnInputLength mi next) = do
+              H.modify_ (_ { length = mi })
+              pure next
 
           eval (OnInputMinNum r next) =
-             let fieldName = labelTxt r.fieldType
-                 errMsg    = fieldName <> "を含める数には数値を入れてください"
-                 idx       = fieldIdx r.fieldType
+             let idx = fieldIdx r.fieldType
               in do
                  s <- H.get
-                 case r.requiredMinNum of
-                      Just v  ->
-                           let np = modifyAt idx (\w -> (_ { requiredMinNum = v }) <$> turn r.isUsed w) s.policy
-                           in H.modify_ (_ { errMsg = Nothing, policy = np })
-                      Nothing -> H.modify_ (_ { errMsg = Just [errMsg] })
+                 let np = modifyAt idx (\w -> (_ { requiredMinNum = r.requiredMinNum }) <$> turn r.isUsed w) s.policy
+                 H.modify_ (_ { policy = np })
                  pure next
                  where
-                       turn :: forall a. Boolean -> Switch a -> Switch a
-                       turn flg = if flg then Switch.on else Switch.off
+                    turn :: forall a. Boolean -> Switch a -> Switch a
+                    turn flg = if flg then Switch.on else Switch.off
 
           eval (OnInputSymNum r next) =
              let idx = fieldIdx r.fieldType

@@ -19,20 +19,12 @@ type Input =
     , min      :: Maybe Number
     , max      :: Maybe Number
     , step     :: StepValue
-    , value    :: Maybe Int
-    }
-
-type Message = Maybe Int
-
-type State =
-    { labelTxt :: String
-    , id       :: String
-    , disabled :: Maybe Boolean
-    , min      :: Maybe Number
-    , max      :: Maybe Number
-    , step     :: StepValue
     , value    :: String
     }
+
+type Message = String
+
+type State = Input
 
 data Query a
     = OnReciveInput Input a
@@ -48,7 +40,7 @@ ui =
     }
     where
           initialState :: Input -> State
-          initialState i = i { value = fromMaybe ""  (show <$> i.value) }
+          initialState i = i
 
           render :: State -> H.ComponentHTML Query
           render state =
@@ -82,5 +74,5 @@ ui =
           eval (OnValueInput n next) = do
              s <- H.get
              H.modify_ (_ { value = n })
-             H.raise $ fromString n
+             H.raise $  n
              pure next
