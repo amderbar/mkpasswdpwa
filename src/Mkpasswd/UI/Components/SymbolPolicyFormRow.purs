@@ -28,7 +28,7 @@ cpMulChk = HC.cp2
 type Input =
     { fieldType      :: FieldType
     , isUsed         :: Boolean
-    , requiredMinNum :: Maybe Int
+    , requiredMinNum :: String
     , isOpenMulChk   :: Boolean
     , allChk         :: Boolean
     , chars          :: Array (Switch Int)
@@ -36,7 +36,7 @@ type Input =
 type Message =
     { fieldType      :: FieldType
     , isUsed         :: Boolean
-    , requiredMinNum :: Maybe Int
+    , requiredMinNum :: String
     , chars          :: Array (Switch Int)
     }
 type State = Input

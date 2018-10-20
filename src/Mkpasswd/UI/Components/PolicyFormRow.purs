@@ -26,7 +26,7 @@ cpLblInp = HC.cp1
 type Input =
     { fieldType      :: FieldType
     , isUsed         :: Boolean
-    , requiredMinNum :: Maybe Int
+    , requiredMinNum :: String
     }
 type Message = Input
 type State = Input
@@ -77,7 +77,7 @@ ui =
              s <- H.get
              let ns = s { requiredMinNum = mi }
              H.raise ns
-             when (isJust mi) $ H.put ns
+             H.put ns
              pure next
 
           eval (OnChkUse f next) = do
