@@ -2,8 +2,7 @@ module Mkpasswd.UI.Components.LabeledInputNumber where
 
 import Prelude
 import Data.Array                        (catMaybes)
-import Data.Int                          (fromString)
-import Data.Maybe                        (Maybe(..), fromMaybe)
+import Data.Maybe                        (Maybe(..))
 import DOM.HTML.Indexed.StepValue        (StepValue)
 import Halogen                        as H
 import Halogen.HTML                   as HH

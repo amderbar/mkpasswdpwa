@@ -3,7 +3,7 @@ module Mkpasswd.UI.Components.PolicyFormRow where
 import Prelude
 import Data.Const                                  (Const)
 import Data.Int                                    (toNumber)
-import Data.Maybe                                  (Maybe(..), isJust)
+import Data.Maybe                                  (Maybe(..))
 import DOM.HTML.Indexed.StepValue                  (StepValue(..))
 import Effect.Class                                (class MonadEffect)
 import Halogen                                   as H
