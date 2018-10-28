@@ -5,16 +5,12 @@ import Mkpasswd.Data.States       (FormData, initialForm, validate)
 import Mkpasswd.Data.Validation   (ErrorCode(..))
 import Mkpasswd.Halogen.Util      (classes)
 import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
-import Data.Array                 (catMaybes)
 import Data.Either                (Either(..))
-import Data.Foldable              (length)
 import Data.Generic.Rep           (class Generic)
 import Data.Generic.Rep.Show      (genericShow)
-import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
-import Data.List                  (List(..))
+import Data.Maybe                 (Maybe(..), fromMaybe)
 import Data.Validation.Semigroup  (toEither)
 import Effect.Aff                 (Aff)
-import Effect.Console             (log)
 import Halogen                 as H
 import Halogen.HTML            as HH
 import Halogen.HTML.Events     as HE

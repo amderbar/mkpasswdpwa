@@ -1,21 +1,13 @@
 module Mkpasswd.Effect.Random where
 
 import Prelude
-import Data.Array            ( concat
-                             , (..)
-                             , null
-                             , length
-                             , elem
-                             , all
+import Data.Array            ( length
                              , (:)
                              , (!!)
                              , deleteAt
-                             , replicate
-                             , mapMaybe
                              , catMaybes
                              )
 import Data.Maybe            ( Maybe(..), fromMaybe )
-import Data.Traversable      ( sequence )
 import Effect                ( Effect )
 import Effect.Random         ( randomInt )
 

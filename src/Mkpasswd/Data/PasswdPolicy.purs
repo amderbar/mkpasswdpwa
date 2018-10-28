@@ -1,21 +1,17 @@
 module Mkpasswd.Data.PasswdPolicy where
 
-import Prelude
-import Mkpasswd.Data.Ascii
-import Mkpasswd.Data.Tuple   ( (<+>) )
-import Control.Biapplicative ( bipure )
-import Control.Biapply       ( (<<*>>) )
-import Data.Array            ( (:)
-                             , nub
-                             )
-import Data.Foldable         ( foldl )
-import Data.Tuple            ( Tuple, fst, snd )
+import Prelude               (($), (+), (-), (<>))
+import Mkpasswd.Data.Ascii   (CharCode, degits, lowercaseAlphabetics, symbols, uppercaseAlphabetics)
+import Data.Array            ((:), nub)
+import Data.Foldable         (foldl)
 
-type RequiredMinNum = Int
-type PasswdPolicy = Tuple RequiredMinNum (Array CharCode)
+type PasswdPolicy =
+   { requiredMinNum :: Int
+   , charSet        :: Array CharCode
+   }
 
-passwdPolicy :: RequiredMinNum -> Array CharCode -> PasswdPolicy
-passwdPolicy = bipure
+passwdPolicy :: Int -> Array CharCode -> PasswdPolicy
+passwdPolicy = { requiredMinNum: _, charSet: _ }
 
 defaultLength :: Int
 defaultLength = 9
@@ -28,22 +24,25 @@ defaultPolicy =
     , passwdPolicy 1 symbols
     ]
 
-requiredMinNum :: PasswdPolicy -> RequiredMinNum
-requiredMinNum = fst
+emptyPolicy :: PasswdPolicy
+emptyPolicy = passwdPolicy 0 []
 
-charSet :: PasswdPolicy -> Array CharCode
-charSet = snd
+combine :: PasswdPolicy -> PasswdPolicy -> PasswdPolicy
+combine a p =
+    { requiredMinNum: a.requiredMinNum + p.requiredMinNum
+    , charSet       : a.charSet <> p.charSet
+    }
 
-sumPolicy :: Array PasswdPolicy -> PasswdPolicy
-sumPolicy polArr = foldl (<+>) (passwdPolicy 0 []) polArr
-
-minLength :: Array PasswdPolicy -> RequiredMinNum
-minLength p = fst $ sumPolicy p
-
-availableChars :: Array PasswdPolicy -> Array CharCode
-availableChars p = nub $ snd $ sumPolicy p
+requiredMinLength :: Array PasswdPolicy -> Int
+requiredMinLength p = _.requiredMinNum $ foldl combine emptyPolicy p
 
 normalize :: Int -> Array PasswdPolicy -> Array PasswdPolicy
 normalize len polArr =
-    let s = bipure ((-) len) nub <<*>> (sumPolicy polArr)
+    let s = rest len $ foldl combine emptyPolicy polArr
      in s : polArr
+     where
+           rest :: Int -> PasswdPolicy -> PasswdPolicy
+           rest l p =
+               { requiredMinNum: l - p.requiredMinNum
+               , charSet       : nub p.charSet
+               }

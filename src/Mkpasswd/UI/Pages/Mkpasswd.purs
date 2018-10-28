@@ -1,325 +1,218 @@
 module Mkpasswd.UI.Pages.Mkpasswd where
 
 import Prelude
-import Mkpasswd                   (mkpasswd)
-import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, defaultLength, defaultPolicy)
-import Mkpasswd.Data.PasswdPolicy.Validation (validate)
-import Mkpasswd.Data.Validation   (ErrorCode(..))
-import Mkpasswd.Data.Array        (modifyAt)
-import Mkpasswd.Data.Tuple        (updateFst, updateSnd, modifyFst, modifySnd)
-import Mkpasswd.Halogen.Util      (classes)
-import Data.Array                 ((!!), mapWithIndex, mapMaybe, replicate, zip)
-import Data.Char                  (fromCharCode)
-import Data.Foldable              (length)
-import Data.Generic.Rep           (class Generic)
-import Data.Generic.Rep.Show      (genericShow)
-import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
-import Data.Either                (Either(..), note)
-import Data.Int                   (fromString, toNumber)
-import Data.String.CodeUnits      (singleton)
-import Data.Traversable           (traverse)
-import Data.Tuple                 (Tuple(..), fst, snd, uncurry)
-import Data.Validation.Semigroup  (V, invalid, toEither)
-import Effect.Aff                 (Aff)
-import Halogen                 as H
-import Halogen.HTML            as HH
-import Halogen.HTML.Events     as HE
-import Halogen.HTML.Properties as HP
+import Data.Array                              ((!!), mapMaybe, null)
+import Data.Const                              (Const)
+import Data.Either                             (Either(..), note, hush, either)
+import Data.Int                                (toNumber, fromString)
+import Data.Maybe                              (Maybe(..), fromMaybe, isJust)
+import Data.Tuple                              (Tuple, uncurry)
+import Data.Traversable                        (traverse)
+import Data.Validation.Semigroup               (toEither)
+import DOM.HTML.Indexed.StepValue              (StepValue(..))
+import Effect                                  (Effect)
+import Effect.Aff                              (Aff)
+import Halogen                               as H
+import Halogen.Component.ChildPath           as HC
+import Halogen.Data.Prism                      (type (<\/>), type (\/))
+import Halogen.HTML                          as HH
+import Halogen.HTML.Events                   as HE
+import Halogen.HTML.Properties               as HP
+--import Halogen.HTML.Properties               as HP
 
-type PolicyState = Tuple Int (Array (Tuple Boolean Int))
+import Mkpasswd                                     (mkpasswd)
+import Mkpasswd.Data.Array                          (modifyAt)
+import Mkpasswd.Data.FieldType.Mkpasswd             (FieldType(..))
+import Mkpasswd.Data.PasswdPolicy                   (PasswdPolicy, defaultLength, defaultPolicy)
+import Mkpasswd.Data.PasswdPolicy.Validation        (validate)
+import Mkpasswd.Data.Switch                         (Switch)
+import Mkpasswd.Data.Switch                       as Switch
+import Mkpasswd.Data.Validation                     (ErrorCode(..))
+import Mkpasswd.Halogen.Util                        (classes)
+import Mkpasswd.UI.Routing                          (RouteHash(..), routeHref)
+import Mkpasswd.UI.Components.LabeledInputNumber  as LblInp
+import Mkpasswd.UI.Components.PolicyFormRow       as PolRow
+import Mkpasswd.UI.Components.SymbolPolicyFormRow as SymRow
 
-policyState :: PasswdPolicy -> PolicyState
-policyState (Tuple n arr) = Tuple n $ zip (replicate (length arr) true) arr
+newtype PolRowSlot = PRSlot Int
 
-toMaybe :: forall a. Tuple Boolean a -> Maybe a
-toMaybe (Tuple flg pol) = if flg then Just pol else Nothing
+derive newtype instance eqPolRowSlot  :: Eq PolRowSlot
+derive newtype instance ordPolRowSlot :: Ord PolRowSlot
 
-type AsciiPolicyState =
-            { degit     :: Tuple Boolean PolicyState
-            , uppercase :: Tuple Boolean PolicyState
-            , lowercase :: Tuple Boolean PolicyState
-            , symbol    :: Tuple Boolean PolicyState
-            }
+type ChildQuery = LblInp.Query <\/> PolRow.Query <\/> SymRow.Query <\/> Const Void
+type ChildSlot  = Unit \/ PolRowSlot \/ Unit \/ Void
 
-statePolicy :: AsciiPolicyState -> Array PasswdPolicy
-statePolicy p = mapMaybe (toMaybe <<< (map (map (mapMaybe toMaybe))))
-    [ p.degit
-    , p.uppercase
-    , p.lowercase
-    , p.symbol
-    ]
+cpLblInp :: HC.ChildPath LblInp.Query ChildQuery Unit ChildSlot
+cpLblInp = HC.cp1
+
+cpPolRow :: HC.ChildPath PolRow.Query ChildQuery PolRowSlot ChildSlot
+cpPolRow = HC.cp2
+
+cpSymRow :: HC.ChildPath SymRow.Query ChildQuery Unit ChildSlot
+cpSymRow = HC.cp3
+
+type Input =
+    Unit
+
+type Message =
+    Maybe String
 
 type State =
-    { length :: Int
-    , policy :: AsciiPolicyState
+    { length :: String
+    , policy :: Array (Switch { requiredMinNum :: String, charSet :: Array Int})
     , passwd :: Maybe String
-    , errMsg :: Maybe (Array String)
-    , custom :: Tuple Boolean Boolean
+    , errMsg :: Array String
     }
 
 data Query a
     = Regenerate a
-    | UpdateLength String a
-    | UpdatePolicy FieldType String a
-    | UpdateChecked FieldType Boolean a
-    | UpdateCharUse FieldType Int Boolean a
-    | UpdateCharUseAll FieldType Boolean a
-    | OpenCustom a
-    | CloseCustom a
+    | OnInputLength LblInp.Message a
+    | OnInputMinNum PolRow.Message a
+    | OnInputSymNum SymRow.Message a
 
-data FieldType
-    = DegitsNum
-    | UppercaseNum
-    | LowercaseNum
-    | SymbolNum
-
-derive instance genericFieldType :: Generic FieldType _
-instance showFieldType :: Show FieldType where
-    show = genericShow
-
-ui :: H.Component HH.HTML Query Unit Void Aff
+ui :: H.Component HH.HTML Query Input Message Aff
 ui =
-  H.component
-    { initialState: const initialState
+  H.parentComponent
+    { initialState
     , render
     , eval
     , receiver : const Nothing
     }
     where
-          initialState :: State
+          initialState :: Input -> State
           initialState =
-              let d = defaultPolicy
-               in
-                  { length : defaultLength
-                  , policy : { degit     : tuple $ policyState <$> (d !! 0)
-                             , uppercase : tuple $ policyState <$> (d !! 1)
-                             , lowercase : tuple $ policyState <$> (d !! 2)
-                             , symbol    : tuple $ policyState <$> (d !! 3)
-                             }
-                  , passwd : Nothing
-                  , errMsg : Nothing
-                  , custom : Tuple false true
-                  }
-          tuple m = Tuple (isJust m) (fromMaybe (Tuple 0 []) m)
+              let fp = (\p -> p { requiredMinNum = show p.requiredMinNum }) <$> defaultPolicy
+               in const
+                     { length : show defaultLength
+                     , policy : (Switch.toSwitch Switch.On) <$> fp
+                     , passwd : Nothing
+                     , errMsg : []
+                     }
 
-          render :: State -> H.ComponentHTML Query
+          render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
-                HH.div
+              HH.div
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
-                    [ HH.h1 [ classes [ "center" ] ] [ HH.text "Mkpasswd" ]
-                    , errorView $ show <$> state.errMsg
-                    , lengthFormRow "ながさ：" $ state.length
-                    , policyFormRow DegitsNum    "すうじ：" $ state.policy.degit
-                    , policyFormRow UppercaseNum "英大字：" $ state.policy.uppercase
-                    , policyFormRow LowercaseNum "英小字：" $ state.policy.lowercase
-                    , policyFormRow SymbolNum    "きごう：" $ state.policy.symbol
-                    , if fst state.custom
-                          then selectAvailableSymbols SymbolNum (snd state.custom) state.policy.symbol
-                          else HH.text ""
-                    , toggleSelect $ fst state.custom
-                    , resultView state.passwd
+                    [ HH.h1_  [ HH.text "Mkpasswd" ]
+                    , (\i -> HH.slot' cpLblInp unit LblInp.ui i $ HE.input OnInputLength)
+                        { labelTxt: "ながさ"
+                        , id: "PasswdLength"
+                        , disabled: Just false
+                        , min: Just $ toNumber 0
+                        , max: Just $ toNumber 100
+                        , step: Any
+                        , value: state.length
+                        }
+                    , (\i -> HH.slot' cpPolRow (PRSlot 0) PolRow.ui i $ HE.input OnInputMinNum)
+                        { fieldType: DegitsNum
+                        , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 0)
+                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 0)
+                        }
+                    , (\i -> HH.slot' cpPolRow (PRSlot 1) PolRow.ui i $ HE.input OnInputMinNum)
+                        { fieldType: UppercaseNum
+                        , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 1)
+                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 1)
+                        }
+                    , (\i -> HH.slot' cpPolRow (PRSlot 2) PolRow.ui i $ HE.input OnInputMinNum)
+                        { fieldType: LowercaseNum
+                        , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 2)
+                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 2)
+                        }
+                    , (\i -> HH.slot' cpSymRow unit SymRow.ui i $ HE.input OnInputSymNum)
+                        { fieldType: SymbolNum
+                        , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 3)
+                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 3)
+                        , isOpenMulChk: false
+                        , allChk: true
+                        , chars: (Switch.toSwitch Switch.On) <$> (fromMaybe [] $ (Switch.label >>> _.charSet) <$> (state.policy !! 3))
+                        }
+                    , if null state.errMsg
+                           then HH.text ""
+                           else HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text $ show state.errMsg ]
+                    , case state.passwd of
+                           Nothing -> HH.text ""
+                           Just v  -> HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text v ]
+                    , if isJust state.passwd
+                           then HH.a
+                                  [ classes [ "mb1", "btn", "btn-primary", "self-center" ]
+                                  , HP.href $ routeHref New
+                                  ]
+                                  [ HH.text "しまう" ]
+                           else HH.text ""
                     , HH.button
                         [ classes [ "flex-none", "self-center", "p1" ]
                         , HE.onClick (HE.input_ Regenerate)
                         ]
-                        [ HH.text "Generate new Password" ]
-                    ]
-          lengthFormRow labelTxt currVal =
-                  HH.div
-                     [ classes [ "flex-none", "clearfix" ] ]
-                     [ HH.label
-                          [ HP.for "PassedLength"
-                          , classes [ "pr1", "col", "col-4", "right-align", "align-baseline", "label" ]
-                          ]
-                          [ HH.text labelTxt ]
-                     , HH.input
-                          [ HP.type_ HP.InputNumber
-                          , HP.id_ "PassedLength"
-                          , classes [ "col", "col-3", "input" ]
-                          , HP.min $ toNumber 0
-                          , HP.max $ toNumber 100
-                          , HP.value $ show currVal
-                          , HE.onValueInput $ HE.input UpdateLength
-                          ]
-                     ]
-          policyFormRow feildType labelTxt (Tuple currChk (Tuple currVal _)) =
-              let inpIdStr = show feildType
-               in
-                  HH.div
-                     [ classes [ "flex-none", "clearfix" ] ]
-                     [ HH.label
-                        [ HP.for inpIdStr
-                        , classes [ "pr1", "col", "col-4", "right-align", "align-baseline", "label" ]
-                        ]
-                        [ HH.text labelTxt ]
-                     , HH.input
-                        [ HP.type_ HP.InputNumber
-                        , HP.id_ inpIdStr
-                        , classes [ "col", "col-3", "input" ]
-                        , HP.min $ toNumber 0
-                        , HP.max $ toNumber 100
-                        , HP.disabled $ not currChk
-                        , HP.value $ show currVal
-                        , HE.onValueInput $ HE.input (UpdatePolicy feildType)
-                        ]
-                     , HH.label
-                        [ classes [ "pl1", "col", "col-4", "left-align", "align-baseline", "label" ]
-                        ]
-                        [ HH.input
-                            [ HP.type_ HP.InputCheckbox
-                            , HP.checked currChk
-                            , HE.onChecked $ HE.input (UpdateChecked feildType)
-                            ]
-                        , HH.text "含める"
-                        ]
-                     ]
-          selectAvailableSymbols feildType allChkFlg (Tuple _ (Tuple _ chars)) =
-              HH.div
-                 [ classes [ "flex-none", "clearfix" ] ]
-                 [ HH.div
-                     [ classes [ "sm-col", "sm-col-12", "md-col", "md-col-9", "lg-col", "lg-col-6" ] ]
-                     $ join [ (mapWithIndex (charCheck feildType) chars)
-                            , [ allCheck feildType allChkFlg ]
-                            ]
-                 ]
-          charCheck feildType idx (Tuple currChk chr) =
-              HH.label
-                 [ classes [ "col", "col-4", "center", "align-baseline", "label" ]
-                 ]
-                 [ HH.input
-                     [ HP.type_ HP.InputCheckbox
-                     , HP.checked currChk
-                     , HE.onChecked $ HE.input (UpdateCharUse feildType idx)
-                     ]
-                 , HH.text $ singleton $ fromMaybe '?' $ fromCharCode chr
-                 ]
-
-          allCheck feildType currChk =
-              HH.label
-                 [ classes [ "col", "col-4", "center", "align-baseline", "label" ]
-                 ]
-                 [ HH.input
-                     [ HP.type_ HP.InputCheckbox
-                     , HP.checked currChk
-                     , HE.onChecked $ HE.input (UpdateCharUseAll feildType)
-                     ]
-                 , HH.text $ if currChk then "ぜんぶ外す" else "ぜんぶ付ける"
-                 ]
-
-          toggleSelect flg =
-              let q = if flg then CloseCustom else OpenCustom
-                  t = if flg then "▲ やめる" else "▼ もっと細かく選ぶ"
-               in
-                 HH.div
-                    [ classes [ "flex-none", "clearfix" ] ]
-                    [ HH.span [ classes [ "col", "col-4" ] ] [ HH.text "　" ]
-                    , HH.a [ classes [ "col", "col-3" ]
-                           , HE.onClick (HE.input_ q)
-                           ]
-                           [ HH.text t ]
+                        [ HH.text "つくる" ]
                     ]
 
-          resultView Nothing = HH.text ""
-          resultView (Just value) =
-              HH.p [ classes [ "h3", "center", "border", "rounded" ] ]
-                   [ HH.text value ]
-          errorView  Nothing = HH.text ""
-          errorView  (Just error) =
-              HH.p [ classes [ "h3" , "center" , "border" , "border-red" ] ]
-                   [ HH.text error ]
-
-          errorMsg OutOfRange   = "長過ぎます"
-          errorMsg ValueMissing = "入力してください"
-          errorMsg EmptyCharSet = "指定された文字種が空です"
-          errorMsg TooShort     = "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
-          errorMsg Unknown      = "なんかエラーになったんでリロードしてください"
-
-          eval :: Query ~> H.ComponentDSL State Query Void Aff
+          eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message Aff
           eval (Regenerate next) = do
               s <- H.get
-              newPasswd <- H.liftEffect $
-                  let vp = toEither $ validate s.length (statePolicy s.policy)
+              ep <- H.liftEffect $
+                  let len = fromStrLength s.length
+                      pol = fromInputPolicyArray s.policy
+                      vp  = join $ validateE <$> len <*> pol
                    in case vp of
                            Right prm -> uncurry mkpasswdE prm
                            Left  err -> pure $ Left err
-              case newPasswd of
-                   Right p -> H.modify_ (_ { errMsg = Nothing, passwd = Just p })
-                   Left  e -> H.modify_ (_ { errMsg = Just (errorMsg <$> e) })
-              pure next
-              where mkpasswdE l s = note [Unknown] <$> mkpasswd l s
-
-          eval (UpdateLength value next) =
-             let newValue = note ("長さには数値を入れてください") $ fromString value
-              in do
-                 s <- H.get
-                 case newValue of
-                      Right val -> H.modify_ (_ { errMsg = Nothing, length = val })
-                      Left  err -> H.modify_ (_ { errMsg = Just [err] })
-                 pure next
-
-          eval (UpdatePolicy feildType value next) =
-              let feildName = case feildType of
-                                   DegitsNum    -> "すうじ"
-                                   UppercaseNum -> "英大字"
-                                   LowercaseNum -> "英小字"
-                                   SymbolNum    -> "きごう"
-                  newValue  = note (feildName <> " should be a Number") $ fromString value
-               in do
-                  state <- H.get
-                  case newValue of
-                       Right vli -> modifyPolicy feildType state vli
-                       Left  err -> H.modify_ (_ { errMsg = Just [err] })
-                  pure next
-                  where
-                        modifyPolicy f s v = do
-                            let p = s.policy
-                            let newPolicy =
-                                  case f of
-                                     DegitsNum     -> p { degit     = updateFst v <$> p.degit }
-                                     UppercaseNum  -> p { uppercase = updateFst v <$> p.uppercase }
-                                     LowercaseNum  -> p { lowercase = updateFst v <$> p.lowercase }
-                                     SymbolNum     -> p { symbol    = updateFst v <$> p.symbol }
-                            H.modify_ (_ { errMsg = Nothing, policy = newPolicy })
-          eval (UpdateChecked feildType flg next) = do
-              state <- H.get
-              modifyPolicy feildType state flg
+              case ep of
+                   Right p -> H.modify_ (_ { errMsg = [], passwd = Just p })
+                   Left  e -> H.modify_ (_ { errMsg = e })
+              H.raise $ hush ep
               pure next
               where
-                    modifyPolicy f s v = do
-                       let p = s.policy
-                       let newPolicy =
-                               case f of
-                                    DegitsNum     -> p { degit     = updateFst v p.degit }
-                                    UppercaseNum  -> p { uppercase = updateFst v p.uppercase }
-                                    LowercaseNum  -> p { lowercase = updateFst v p.lowercase }
-                                    SymbolNum     -> p { symbol    = updateFst v p.symbol }
-                       H.modify_ (_ { errMsg = Nothing, policy = newPolicy })
+                    fromStrMinNum :: forall p. { requiredMinNum :: String | p } -> Maybe { requiredMinNum :: Int | p }
+                    fromStrMinNum p = p { requiredMinNum = _ } <$> fromString p.requiredMinNum
 
-          eval (UpdateCharUse fieldType idx flg next) = do
-              s <- H.get
-              let ns = map (modifyAt idx (updateFst flg)) <$> s.policy.symbol
-              H.modify_ (_ { policy = s.policy { symbol = ns } })
+                    fromStrLength :: String -> Either (Array String) Int
+                    fromStrLength l = note ["長さには数値を入れてください"] $ fromString l
+
+                    fromInputPolicyArray :: Array (Switch { requiredMinNum :: String, charSet :: Array Int }) -> Either (Array String) (Array PasswdPolicy)
+                    fromInputPolicyArray p = note ["各文字種ごとの必要最低数には数値を入れてください"] $ traverse fromStrMinNum (mapMaybe Switch.toMaybe p)
+
+                    validateE :: Int -> Array PasswdPolicy -> Either (Array String) (Tuple Int (Array PasswdPolicy))
+                    validateE l p = either (\e -> Left $ showErr <$> e) (\v -> Right v) $ toEither $ validate l p
+
+                    showErr :: ErrorCode -> String
+                    showErr = case _ of
+                                   OutOfRange   -> "長過ぎます"
+                                   ValueMissing -> "入力してください"
+                                   EmptyCharSet -> "指定された文字種が空です"
+                                   TooShort     -> "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
+                                   Unknown      -> "なんかエラーになったんでリロードしてください"
+
+                    mkpasswdE :: Int -> Array PasswdPolicy -> Effect (Either (Array String) String)
+                    mkpasswdE l a = note [showErr Unknown] <$> mkpasswd l a
+
+          eval (OnInputLength mi next) = do
+              H.modify_ (_ { length = mi })
               pure next
 
-          eval (UpdateCharUseAll fieldType flg next) = do
-              s <- H.get
-              let ns = map (map (updateFst flg)) <$> s.policy.symbol
-              H.modify_ (_ { policy = s.policy { symbol = ns }
-                           , custom = updateSnd flg s.custom
-                           }
-                        )
-              pure next
+          eval (OnInputMinNum r next) =
+             let idx = fieldIdx r.fieldType
+              in do
+                 s <- H.get
+                 let np = modifyAt idx (\w -> (_ { requiredMinNum = r.requiredMinNum }) <$> turn r.isUsed w) s.policy
+                 H.modify_ (_ { policy = np })
+                 pure next
+                 where
+                    turn :: forall a. Boolean -> Switch a -> Switch a
+                    turn flg = if flg then Switch.on else Switch.off
 
-          eval (OpenCustom next) = do
-              s <- H.get
-              H.modify_ (_ { custom = updateFst true s.custom })
-              pure next
+          eval (OnInputSymNum r next) =
+             let idx = fieldIdx r.fieldType
+                 pm  = { fieldType: r.fieldType
+                       , isUsed: r.isUsed
+                       , requiredMinNum: r.requiredMinNum
+                       }
+              in do
+                 s <- H.get
+                 H.modify_ (_ { policy = modifyAt idx (map (_ { charSet = mapMaybe Switch.toMaybe r.chars })) s.policy })
+                 eval (OnInputMinNum pm next)
 
-          eval (CloseCustom next) = do
-              s <- H.get
-              let ns = map (map (updateFst true)) <$> s.policy.symbol
-              H.modify_ (_ { policy = s.policy { symbol = ns }
-                           , custom = updateFst false $ updateSnd true s.custom
-                           }
-                        )
-              pure next
+          fieldIdx :: FieldType -> Int
+          fieldIdx DegitsNum    = 0
+          fieldIdx UppercaseNum = 1
+          fieldIdx LowercaseNum = 2
+          fieldIdx SymbolNum    = 3

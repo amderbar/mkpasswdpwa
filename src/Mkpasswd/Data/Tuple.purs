@@ -3,8 +3,6 @@ module Mkpasswd.Data.Tuple where
 import Prelude
 import Control.Biapplicative      ( bipure )
 import Control.Biapply            ( (<<*>>) )
-import Data.Semigroup             ( class Semigroup )
-import Data.Semiring              ( class Semiring )
 import Data.Tuple                 (Tuple, swap)
 
 addappend :: forall r g
