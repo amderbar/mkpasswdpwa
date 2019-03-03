@@ -16,7 +16,7 @@ lowercaseAlphabetics :: Array CharCode
 lowercaseAlphabetics = 0x61 .. 0x7a
 
 symbols :: Array CharCode
-symbols = concat [ 0x21 .. 0x2e
+symbols = concat [ 0x21 .. 0x2f
                  , 0x3a .. 0x40
                  , 0x5b .. 0x60
                  , 0x7b .. 0x7e
