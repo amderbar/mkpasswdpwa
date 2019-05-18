@@ -9,8 +9,7 @@
   "author": "amderbar",
   "license": "MIT",
   "devDependencies": {
-    "psc-package": "^3.0.0",
-    "pulp": "^12.4.2"
+    "spago": "^0.8.0"
   },
   "dependencies": {
     "ace-css": "^1.1.0",
