@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "spago bundle-app --to docs/app.js",
+    "watch": "spago bundle-app --watch --to docs/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "amderbar",
