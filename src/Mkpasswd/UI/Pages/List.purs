@@ -8,23 +8,30 @@ import Data.Array                 (mapWithIndex)
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
+import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
+import Web.HTML                as Web
+import Web.HTML.Window         as Win
 
 type Input = Array FormData
+
+data Message = DelPasswd Int
 
 type State =
     { list  :: Array FormData
     }
 
-data Query a = Identity a
+data Query a
+    = Delete Int a
+    | Receive Input a
 
-ui :: H.Component HH.HTML Query Input Void Aff
+ui :: H.Component HH.HTML Query Input Message Aff
 ui =
   H.component
     { initialState
     , render
     , eval
-    , receiver : const Nothing
+    , receiver : HE.input Receive
     }
     where
           initialState :: Input -> State
@@ -41,7 +48,7 @@ ui =
                         ]
                         [ HH.text "new" ]
                     , HH.table
-                        [ classes [ "self-center", "col", "col-11", "border" ] ]
+                        [ classes [ "col", "col-12", "border" ] ]
                         [ HH.thead_
                             [ HH.tr_
                                 [ HH.td_ []
@@ -58,15 +65,26 @@ ui =
                     [ HH.td
                         [ classes [ "border-top" ] ]
                         [ HH.a
-                            [ classes [ "col", "col-12" ]
+                            [ classes [ "btn", "btn-small", "btn-primary" ]
                             , HP.href $ routeHref (Store i)
                             ]
                             [ HH.text "edit" ]
+                        , HH.a
+                            [ classes [ "ml1", "btn", "btn-small", "btn-outline" ]
+                            , HE.onClick (HE.input_ $ Delete i)
+                            ]
+                            [ HH.text "del" ]
                         ]
                     , HH.td [ classes [ "border-top" ] ] [ HH.text fd.account ]
                     , HH.td [ classes [ "border-top" ] ] [ HH.text fd.passwd  ]
                     , HH.td [ classes [ "border-top" ] ] [ HH.text fd.note ]
                     ]
 
-          eval :: Query ~> H.ComponentDSL State Query Void Aff
-          eval (Identity next) = pure next
+          eval :: Query ~> H.ComponentDSL State Query Message Aff
+          eval (Delete i next) = do
+             a <- H.liftEffect $ Web.window >>= Win.confirm "削除します。よろしいですか？" 
+             when a $ H.raise $ DelPasswd i
+             pure next
+          eval (Receive s next) = do
+             H.modify_ (_ { list = s })
+             pure next

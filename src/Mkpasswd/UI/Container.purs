@@ -10,12 +10,12 @@ import Mkpasswd.UI.Templates       (headerNav)
 import Mkpasswd.Data.Array         (updateAt)
 import Mkpasswd.Data.States        (FormData, initialForm)
 import Mkpasswd.Data.Storage       (fetch, save)
-import Data.Array                  (snoc, (!!))
+import Data.Array                  (snoc, (!!), deleteAt)
 import Data.Const                  (Const)
 import Data.Either                 (Either(..))
 import Data.List                   (List(..))
 import Data.List.Types             (toList)
-import Data.Maybe                  (Maybe(..), isJust, fromMaybe)
+import Data.Maybe                  (Maybe(..), isJust, fromMaybe, maybe)
 import Effect.Aff                  (Aff)
 import Foreign                     (ForeignError)
 --import Foreign                     (ForeignError, renderForeignError)
@@ -49,6 +49,7 @@ data Query a
     | Mkpasswd (Maybe String) a
     | Load a
     | Save St.Message a
+    | Delete Lt.Message a
 
 wsKey :: String
 wsKey = "mkpasswd"
@@ -82,7 +83,7 @@ ui =
                       [ headerNav
                       , case rt of
                              Index   ->  HH.slot' cpMkpasswd unit Mk.ui unit (HE.input Mkpasswd)
-                             List    ->  HH.slot' cpList unit Lt.ui state.storage absurd
+                             List    ->  HH.slot' cpList unit Lt.ui state.storage (HE.input Delete)
                              New     ->  HH.slot' cpStore unit St.ui (initialForm { passwd = _ } <$> state.passwd) (HE.input Save)
                              Store i ->  HH.slot' cpStore unit St.ui (state.storage !! i) (HE.input Save)
                       ]
@@ -111,4 +112,11 @@ ui =
                     else snoc s.storage fd
              H.modify_ (_ { storage = st })
              H.liftEffect $ save wsKey st
+             pure next
+          eval (Delete (Lt.DelPasswd i) next) = do
+             s <- H.get
+             let newSt = deleteAt i s.storage
+             newSt # maybe (pure unit) \st -> do
+                H.modify_ (_ { storage = st })
+                H.liftEffect $ save wsKey st
              pure next
