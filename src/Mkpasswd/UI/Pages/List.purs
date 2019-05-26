@@ -5,7 +5,6 @@ import Mkpasswd.Data.States       (FormData)
 import Mkpasswd.Halogen.Util      (classes)
 import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
 import Data.Array                 (mapWithIndex)
-import Data.Maybe                 (Maybe(..))
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
