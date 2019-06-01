@@ -1,12 +1,10 @@
 module Mkpasswd.UI.Container where
 
 import Prelude
-import Mkpasswd.Halogen.Util       (classes, style)
 import Mkpasswd.UI.Pages.Mkpasswd as Mk
 import Mkpasswd.UI.Pages.List     as Lt
 import Mkpasswd.UI.Pages.Store    as St
 import Mkpasswd.UI.Routing         (RouteHash(..))
-import Mkpasswd.Components.HeaderNav as Nav
 import Mkpasswd.Data.Array         (updateAt)
 import Mkpasswd.Data.States        (FormData, initialForm)
 import Mkpasswd.Data.Storage       (fetch, save)
@@ -25,20 +23,17 @@ import Halogen.Data.Prism          (type (<\/>), type (\/))
 import Halogen.HTML                as HH
 import Halogen.HTML.Events         as HE
 
-type ChildQuery = Nav.Query <\/> Mk.Query <\/> Lt.Query <\/> St.Query <\/> Const Void
-type Slot  = Unit \/ Unit \/ Unit \/ Unit \/ Void
-
-cpNav :: HC.ChildPath Nav.Query ChildQuery Unit Slot
-cpNav = HC.cp1
+type ChildQuery = Mk.Query <\/> Lt.Query <\/> St.Query <\/> Const Void
+type Slot  = Unit \/ Unit \/ Unit \/ Void
 
 cpMkpasswd :: HC.ChildPath Mk.Query ChildQuery Unit Slot
-cpMkpasswd = HC.cp2
+cpMkpasswd = HC.cp1
 
 cpList :: HC.ChildPath Lt.Query ChildQuery Unit Slot
-cpList = HC.cp3
+cpList = HC.cp2
 
 cpStore :: HC.ChildPath St.Query ChildQuery Unit Slot
-cpStore = HC.cp4
+cpStore = HC.cp3
 
 type State =
     { route  :: RouteHash
@@ -78,15 +73,11 @@ ui =
 
           render :: State -> H.ParentHTML Query ChildQuery Slot Aff
           render state =
-              let rt = state.route
-               in HH.main_
-                      [ HH.slot' cpNav unit Nav.component unit absurd
-                      , case rt of
-                             Index   ->  HH.slot' cpMkpasswd unit Mk.ui unit (HE.input Mkpasswd)
-                             List    ->  HH.slot' cpList unit Lt.ui state.storage (HE.input Delete)
-                             New     ->  HH.slot' cpStore unit St.ui (initialForm { passwd = _ } <$> state.passwd) (HE.input Save)
-                             Store i ->  HH.slot' cpStore unit St.ui (state.storage !! i) (HE.input Save)
-                      ]
+              case state.route of
+                Index   ->  HH.slot' cpMkpasswd unit Mk.ui unit (HE.input Mkpasswd)
+                List    ->  HH.slot' cpList unit Lt.ui state.storage (HE.input Delete)
+                New     ->  HH.slot' cpStore unit St.ui (initialForm { passwd = _ } <$> state.passwd) (HE.input Save)
+                Store i ->  HH.slot' cpStore unit St.ui (state.storage !! i) (HE.input Save)
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Void Aff
           eval (ChangeHash newHash next) = do

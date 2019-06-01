@@ -4,6 +4,7 @@ import Prelude
 import Mkpasswd.Data.States       (FormData, initialForm, validate)
 import Mkpasswd.Data.Validation   (ErrorCode(..))
 import Mkpasswd.Halogen.Util      (classes)
+import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
 import Data.Either                (Either(..))
 import Data.Generic.Rep           (class Generic)
@@ -16,6 +17,9 @@ import Halogen.HTML            as HH
 import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
 import Routing.Hash               (setHash)
+
+type ChildQuery = Nav.Query
+type ChildSlot = Unit
 
 type Input = Maybe FormData
 
@@ -43,7 +47,7 @@ data Query a
 
 ui :: H.Component HH.HTML Query Input Message Aff
 ui =
-  H.component
+  H.parentComponent
     { initialState
     , render
     , eval
@@ -57,9 +61,11 @@ ui =
                  , error: Nothing
                  }
 
-          render :: State -> H.ComponentHTML Query
+          render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
-                HH.div
+            HH.main_
+              [ HH.slot unit Nav.component unit absurd
+              , HH.div
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
                     [ HH.h1 [ classes [ "center" ] ] [ HH.text "Store" ]
                     , errorView $ show <$> state.error
@@ -80,6 +86,7 @@ ui =
                             [ HH.text "Cancel" ]
                         ]
                     ]
+              ]
           labelTxt AccountInput  = "アカウントID："
           labelTxt Passwdinput   = "パスワード："
           labelTxt NoteTextarea  = "備考："
@@ -122,7 +129,7 @@ ui =
           errorMsg TooShort     = "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
           errorMsg Unknown      = "なんかエラーになったんでリロードしてください"
 
-          eval :: Query ~> H.ComponentDSL State Query Message Aff
+          eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message Aff
           eval (UpdateAccount newVal next) = do
              s <- H.get
              H.modify_ (_ { form = s.form { account = newVal } })

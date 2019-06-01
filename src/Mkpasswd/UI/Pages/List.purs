@@ -3,6 +3,7 @@ module Mkpasswd.UI.Pages.List where
 import Prelude
 import Mkpasswd.Data.States       (FormData)
 import Mkpasswd.Halogen.Util      (classes)
+import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
 import Data.Array                 (mapWithIndex)
 import Effect.Aff                 (Aff)
@@ -12,6 +13,9 @@ import Halogen.HTML.Events     as HE
 import Halogen.HTML.Properties as HP
 import Web.HTML                as Web
 import Web.HTML.Window         as Win
+
+type ChildQuery = Nav.Query
+type ChildSlot = Unit
 
 type Input = Array FormData
 
@@ -27,7 +31,7 @@ data Query a
 
 ui :: H.Component HH.HTML Query Input Message Aff
 ui =
-  H.component
+  H.parentComponent
     { initialState
     , render
     , eval
@@ -37,9 +41,11 @@ ui =
           initialState :: Input -> State
           initialState = { list: _ }
 
-          render :: State -> H.ComponentHTML Query
+          render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
-                HH.div
+            HH.main_
+              [ HH.slot unit Nav.component unit absurd
+              , HH.div
                     [ classes [ "flex-auto" , "flex", "flex-column" ] ]
                     [ HH.h1 [ classes [ "center" ] ] [ HH.text "List" ]
                     , HH.a
@@ -60,6 +66,7 @@ ui =
                         , HH.tbody_ $ mapWithIndex accountRow state.list
                         ]
                     ]
+              ]
           accountRow i fd =
                 HH.tr_
                     [ HH.td
@@ -80,7 +87,7 @@ ui =
                     , HH.td [ classes [ "border-top" ] ] [ HH.text fd.note ]
                     ]
 
-          eval :: Query ~> H.ComponentDSL State Query Message Aff
+          eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message Aff
           eval (Delete i next) = do
              a <- H.liftEffect $ Web.window >>= Win.confirm "削除します。よろしいですか？" 
              when a $ H.raise $ DelPasswd i

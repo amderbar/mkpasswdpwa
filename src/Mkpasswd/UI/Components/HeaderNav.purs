@@ -1,4 +1,4 @@
-module Mkpasswd.Components.HeaderNav where
+module Mkpasswd.UI.Components.HeaderNav where
 
 import Prelude
 import Mkpasswd.Halogen.Util       (classes)

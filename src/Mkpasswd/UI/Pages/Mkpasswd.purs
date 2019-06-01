@@ -31,6 +31,7 @@ import Mkpasswd.Data.Validation                     (ErrorCode(..))
 import Mkpasswd.Halogen.Util                        (classes)
 import Mkpasswd.UI.Element                        as UI
 import Mkpasswd.UI.Routing                          (RouteHash(..), routeHref)
+import Mkpasswd.UI.Components.HeaderNav           as Nav
 import Mkpasswd.UI.Components.LabeledInputNumber  as LblInp
 import Mkpasswd.UI.Components.PolicyFormRow       as PolRow
 import Mkpasswd.UI.Components.SymbolPolicyFormRow as SymRow
@@ -40,17 +41,20 @@ newtype PolRowSlot = PRSlot Int
 derive newtype instance eqPolRowSlot  :: Eq PolRowSlot
 derive newtype instance ordPolRowSlot :: Ord PolRowSlot
 
-type ChildQuery = LblInp.Query <\/> PolRow.Query <\/> SymRow.Query <\/> Const Void
-type ChildSlot  = Unit \/ PolRowSlot \/ Unit \/ Void
+type ChildQuery = Nav.Query <\/> LblInp.Query <\/> PolRow.Query <\/> SymRow.Query <\/> Const Void
+type ChildSlot  = Unit \/ Unit \/ PolRowSlot \/ Unit \/ Void
+
+cpNav :: HC.ChildPath Nav.Query ChildQuery Unit ChildSlot
+cpNav = HC.cp1
 
 cpLblInp :: HC.ChildPath LblInp.Query ChildQuery Unit ChildSlot
-cpLblInp = HC.cp1
+cpLblInp = HC.cp2
 
 cpPolRow :: HC.ChildPath PolRow.Query ChildQuery PolRowSlot ChildSlot
-cpPolRow = HC.cp2
+cpPolRow = HC.cp3
 
 cpSymRow :: HC.ChildPath SymRow.Query ChildQuery Unit ChildSlot
-cpSymRow = HC.cp3
+cpSymRow = HC.cp4
 
 type Input =
     Unit
@@ -92,7 +96,9 @@ ui =
 
           render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
-              UI.container
+            HH.main_
+              [ HH.slot' cpNav unit Nav.component unit absurd
+              , UI.container
                     [ (\i -> HH.slot' cpLblInp unit LblInp.ui i $ HE.input OnInputLength)
                         { labelTxt: "Length"
                         , id: "PasswdLength"
@@ -144,6 +150,7 @@ ui =
                         ]
                         [ HH.text "つくる" ]
                     ]
+              ]
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message Aff
           eval (Regenerate next) = do
