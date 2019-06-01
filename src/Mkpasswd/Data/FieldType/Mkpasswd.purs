@@ -15,7 +15,7 @@ instance showFieldType :: Show FieldType where
     show = genericShow
 
 labelTxt :: FieldType -> String
-labelTxt DegitsNum    = "すうじ"
-labelTxt UppercaseNum = "英大字"
-labelTxt LowercaseNum = "英小字"
-labelTxt SymbolNum    = "きごう"
+labelTxt DegitsNum    = "Numeral"
+labelTxt UppercaseNum = "Uppercase Alphabet"
+labelTxt LowercaseNum = "Lowercase Alphabet"
+labelTxt SymbolNum    = "Symbol"

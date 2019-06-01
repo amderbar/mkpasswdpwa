@@ -79,10 +79,7 @@ ui =
           render :: State -> H.ParentHTML Query ChildQuery Slot Aff
           render state =
               let rt = state.route
-               in HH.main
-                      [ style "height: 100%"
-                      , classes [ "flex" , "flex-column" ]
-                      ]
+               in HH.main_
                       [ HH.slot' cpNav unit Nav.component unit absurd
                       , case rt of
                              Index   ->  HH.slot' cpMkpasswd unit Mk.ui unit (HE.input Mkpasswd)

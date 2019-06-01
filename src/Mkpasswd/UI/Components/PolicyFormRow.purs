@@ -17,12 +17,6 @@ import Mkpasswd.Data.FieldType.Mkpasswd             (FieldType, labelTxt)
 import Mkpasswd.Halogen.Util                        (classes)
 import Mkpasswd.UI.Components.LabeledInputNumber as LblInp
 
-type ChildQuery = LblInp.Query <\/> Const Void
-type ChildSlot  = Unit \/ Void
-
-cpLblInp :: HC.ChildPath LblInp.Query ChildQuery Unit ChildSlot
-cpLblInp = HC.cp1
-
 type Input =
     { fieldType      :: FieldType
     , isUsed         :: Boolean
@@ -37,7 +31,7 @@ data Query a
 
 ui :: forall m. MonadEffect m => H.Component HH.HTML Query Input Message m
 ui =
-  H.parentComponent
+  H.component
     { initialState
     , render
     , eval
@@ -47,32 +41,48 @@ ui =
           initialState :: Input -> State
           initialState i = i
 
-          render :: forall m. MonadEffect m => State -> H.ParentHTML Query ChildQuery ChildSlot m
+          render :: State -> H.ComponentHTML Query
           render state =
              HH.div
-                [ classes [ "clearfix" ] ]
-                [ (\i -> HH.slot' cpLblInp unit LblInp.ui i $ HE.input OnInputRequiredMinNum)
-                   { labelTxt: labelTxt state.fieldType
-                   , id: show state.fieldType
-                   , min: Just $ toNumber 0
-                   , max: Just $ toNumber 100
-                   , step: Any
-                   , disabled: Just $ not state.isUsed
-                   , value: state.requiredMinNum
-                   }
-                , HH.label
-                   [ classes [ "label" ]
-                   ]
-                   [ HH.input
-                       [ HP.type_ HP.InputCheckbox
-                       , HP.checked state.isUsed
-                       , HE.onChecked $ HE.input OnChkUse
-                       ]
-                   , HH.text "含める"
-                   ]
+                [ classes [ "field" ] ]
+                [ HH.label
+                    [ classes [ "label" ] ]
+                    [ HH.text (labelTxt state.fieldType) ]
+                , HH.div
+                    [ classes [ "field", "has-addons" ] ]
+                    [ HH.span
+                        [ classes [ "control" ] ]
+                        [ HH.label
+                            [ classes [ "button", "checkbox" ]
+                            ]
+                            [ HH.input
+                                [ HP.type_ HP.InputCheckbox
+                                , HP.checked state.isUsed
+                                , classes [ "mr1" ]
+                                , HE.onChecked $ HE.input OnChkUse
+                                ]
+                            , HH.text "use it"
+                            ]
+                        ]
+                    , HH.span
+                        [ classes [ "control", "is-expanded" ] ]
+                        [ HH.input
+                            [ HP.type_ HP.InputNumber
+                            , HP.id_ (show state.fieldType)
+                            , classes [ "input" ]
+                            , HP.value state.requiredMinNum
+                            , HE.onValueInput $ HE.input OnInputRequiredMinNum
+                            , HP.step Any
+                            , HP.min (toNumber 0)
+                            , HP.max (toNumber 100)
+                            , HP.disabled (not state.isUsed)
+                            ]
+                        ]
+                    ]
                 ]
 
-          eval :: forall m. MonadEffect m => Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message m
+
+          eval :: Query ~> H.ComponentDSL State Query Message m
           eval (OnInputRequiredMinNum mi next) = do
              s <- H.get
              let ns = s { requiredMinNum = mi }

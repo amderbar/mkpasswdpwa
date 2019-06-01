@@ -43,25 +43,29 @@ ui =
 
           render :: State -> H.ComponentHTML Query
           render state =
-              HH.span_
-                  [ HH.label
-                      [ HP.for state.id
-                      , classes [ "pr1", "label" ]
-                      ]
-                      [ HH.text state.labelTxt ]
-                  , HH.input $
-                          catMaybes
-                              [ Just $ HP.type_ HP.InputNumber
-                              , Just $ HP.id_ state.id
-                              , Just $ classes [ "input" ]
-                              , Just $ HP.value state.value
-                              , Just $ HE.onValueInput $ HE.input OnValueInput
-                              , Just $ HP.step state.step
-                              , HP.max      <$> state.max
-                              , HP.min      <$> state.min
-                              , HP.disabled <$> state.disabled
-                              ]
-                  ]
+             HH.div
+                [ classes [ "field" ] ]
+                [ HH.label
+                    [ HP.for state.id
+                    , classes [ "pr1", "label" ]
+                    ]
+                    [ HH.text state.labelTxt ]
+                , HH.span
+                    [ classes [ "control" ] ]
+                    [ HH.input $
+                        catMaybes
+                        [ Just $ HP.type_ HP.InputNumber
+                        , Just $ HP.id_ state.id
+                        , Just $ classes [ "input" ]
+                        , Just $ HP.value state.value
+                        , Just $ HE.onValueInput $ HE.input OnValueInput
+                        , Just $ HP.step state.step
+                        , HP.max      <$> state.max
+                        , HP.min      <$> state.min
+                        , HP.disabled <$> state.disabled
+                        ]
+                    ]
+                ]
 
           eval :: forall m. Query ~> H.ComponentDSL State Query Message m
           eval (OnReciveInput i next) = do

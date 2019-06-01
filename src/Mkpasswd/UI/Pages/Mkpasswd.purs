@@ -29,6 +29,7 @@ import Mkpasswd.Data.Switch                         (Switch)
 import Mkpasswd.Data.Switch                       as Switch
 import Mkpasswd.Data.Validation                     (ErrorCode(..))
 import Mkpasswd.Halogen.Util                        (classes)
+import Mkpasswd.UI.Element                        as UI
 import Mkpasswd.UI.Routing                          (RouteHash(..), routeHref)
 import Mkpasswd.UI.Components.LabeledInputNumber  as LblInp
 import Mkpasswd.UI.Components.PolicyFormRow       as PolRow
@@ -91,11 +92,9 @@ ui =
 
           render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
-              HH.div
-                    [ classes [ "flex-auto" , "flex", "flex-column" ] ]
-                    [ HH.h1_  [ HH.text "Mkpasswd" ]
-                    , (\i -> HH.slot' cpLblInp unit LblInp.ui i $ HE.input OnInputLength)
-                        { labelTxt: "ながさ"
+              UI.container
+                    [ (\i -> HH.slot' cpLblInp unit LblInp.ui i $ HE.input OnInputLength)
+                        { labelTxt: "Length"
                         , id: "PasswdLength"
                         , disabled: Just false
                         , min: Just $ toNumber 0

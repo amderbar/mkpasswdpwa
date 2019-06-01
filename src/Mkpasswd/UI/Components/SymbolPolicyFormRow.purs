@@ -2,15 +2,18 @@ module Mkpasswd.UI.Components.SymbolPolicyFormRow where
 
 import Prelude
 import Data.Const                             (Const)
+import Data.Int                               (toNumber)
 import Data.Maybe                             (Maybe(..))
+import DOM.HTML.Indexed.StepValue             (StepValue(..))
 import Effect.Class                           (class MonadEffect)
 import Halogen                              as H
 import Halogen.Component.ChildPath          as HC
 import Halogen.Data.Prism                     (type (<\/>), type (\/))
 import Halogen.HTML                         as HH
 import Halogen.HTML.Events                  as HE
+import Halogen.HTML.Properties        as HP
 
-import Mkpasswd.Data.FieldType.Mkpasswd       (FieldType)
+import Mkpasswd.Data.FieldType.Mkpasswd       (FieldType, labelTxt)
 import Mkpasswd.Data.Switch                   (Switch)
 import Mkpasswd.Halogen.Util                  (classes)
 import Mkpasswd.UI.Components.PolicyFormRow as PolRow
@@ -44,7 +47,6 @@ type State = Input
 data Query a
     = OnInputMinNum PolRow.Message a
     | OnChangeChrChk MulChk.Message a
-    | ToggleMulChk Boolean a
 
 ui :: forall m. MonadEffect m => H.Component HH.HTML Query Input Message m
 ui =
@@ -58,29 +60,53 @@ ui =
           initialState :: Input -> State
           initialState i = i
 
-          render :: forall m. MonadEffect m => State -> H.ParentHTML Query ChildQuery Slot m
+          render :: State -> H.ParentHTML Query ChildQuery Slot m
           render state =
              HH.div
-                [ classes [ "flex-none" ] ]
-                [ (\i -> HH.slot' cpPolRow unit PolRow.ui i $ HE.input OnInputMinNum)
-                    { fieldType: state.fieldType
-                    , isUsed: state.isUsed
-                    , requiredMinNum: state.requiredMinNum
-                    }
-                , HH.a
-                    [ classes [ "block" ]
-                    , HE.onClick $ HE.input_ $ ToggleMulChk (not state.isOpenMulChk)
+                [ classes [ "field" ] ]
+                [ HH.label
+                    [ classes [ "label" ] ]
+                    [ HH.text (labelTxt state.fieldType) ]
+                , HH.div
+                    [ classes [ "field", "has-addons" ] ]
+                    [ HH.span
+                        [ classes [ "control" ] ]
+                        [ HH.label
+                            [ classes [ "button", "checkbox" ]
+                            ]
+                            [ HH.input
+                                [ HP.type_ HP.InputCheckbox
+                                , HP.checked state.isUsed
+                                , classes [ "mr1" ]
+                                , HE.onChecked $ HE.input (OnInputMinNum <<< {fieldType: state.fieldType, requiredMinNum: state.requiredMinNum, isUsed: _})
+                                ]
+                            , HH.text "use it"
+                            ]
+                        ]
+                    , HH.span
+                        [ classes [ "control", "is-expanded" ] ]
+                        [ HH.input
+                            [ HP.type_ HP.InputNumber
+                            , HP.id_ (show state.fieldType)
+                            , classes [ "input" ]
+                            , HP.value state.requiredMinNum
+                            , HE.onValueInput $ HE.input (OnInputMinNum <<< {fieldType: state.fieldType, requiredMinNum: _, isUsed: state.isUsed})
+                            , HP.step Any
+                            , HP.min (toNumber 0)
+                            , HP.max (toNumber 100)
+                            , HP.disabled (not state.isUsed)
+                            ]
+                        ]
                     ]
-                    [ HH.text if state.isOpenMulChk then "▲ やめる" else "▼ もっと細かく選ぶ" ]
-                , if state.isOpenMulChk
-                      then (\i -> HH.slot' cpMulChk unit MulChk.ui i $ HE.input OnChangeChrChk)
-                             { allChk: state.allChk
-                             , chars : state.chars
-                             }
-                      else HH.text ""
+                , (\i -> HH.slot' cpMulChk unit MulChk.ui i $ HE.input OnChangeChrChk)
+                    { allChk: state.allChk
+                    , chars : state.chars
+                    , isOpenMulChk: state.isOpenMulChk
+                    , disabled: not state.isUsed
+                    }
                 ]
 
-          eval :: forall m. MonadEffect m => Query ~> H.ParentDSL State Query ChildQuery Slot Message m
+          eval :: Query ~> H.ParentDSL State Query ChildQuery Slot Message m
           eval (OnInputMinNum m next) = do
              ns <- H.modify (_ { isUsed = m.isUsed, requiredMinNum = m.requiredMinNum })
              H.raise $ message ns
@@ -89,10 +115,6 @@ ui =
           eval (OnChangeChrChk m next) = do
              ns <- H.modify (_ { chars = m })
              H.raise $ message ns
-             pure next
-
-          eval (ToggleMulChk f next) = do
-             H.modify_ (_ { isOpenMulChk = f })
              pure next
 
           message :: State -> Message
