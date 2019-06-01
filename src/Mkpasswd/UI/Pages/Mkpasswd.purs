@@ -18,7 +18,6 @@ import Halogen.Data.Prism                      (type (<\/>), type (\/))
 import Halogen.HTML                          as HH
 import Halogen.HTML.Events                   as HE
 import Halogen.HTML.Properties               as HP
---import Halogen.HTML.Properties               as HP
 
 import Mkpasswd                                     (mkpasswd)
 import Mkpasswd.Data.Array                          (modifyAt)
@@ -70,7 +69,8 @@ type State =
     }
 
 data Query a
-    = Regenerate a
+    = Generate a
+    | Clear a
     | OnInputLength LblInp.Message a
     | OnInputMinNum PolRow.Message a
     | OnInputSymNum SymRow.Message a
@@ -96,7 +96,8 @@ ui =
 
           render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
-            HH.main_
+            HH.main
+              [ classes [ if isJust state.passwd then "is-clipped" else "" ] ]
               [ HH.slot' cpNav unit Nav.component unit absurd
               , UI.container
                     [ (\i -> HH.slot' cpLblInp unit LblInp.ui i $ HE.input OnInputLength)
@@ -134,26 +135,80 @@ ui =
                     , if null state.errMsg
                            then HH.text ""
                            else HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text $ show state.errMsg ]
-                    , case state.passwd of
-                           Nothing -> HH.text ""
-                           Just v  -> HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text v ]
-                    , if isJust state.passwd
-                           then HH.a
-                                  [ classes [ "mb1", "btn", "btn-primary", "self-center" ]
-                                  , HP.href $ routeHref New
-                                  ]
-                                  [ HH.text "しまう" ]
-                           else HH.text ""
-                    , HH.button
-                        [ classes [ "flex-none", "self-center", "p1" ]
-                        , HE.onClick (HE.input_ Regenerate)
+                    ]
+            　, HH.section
+                    [ classes [ "level", "sticky-bottom", "box" ] ]
+                    [ HH.div
+                        [ classes [ "level-item" ] ]
+                        [ HH.div
+                            [ classes [ "field", "is-grouped" ] ]
+                            [ HH.span
+                                [ classes [ "control" ] ]
+                                [ HH.button
+                                    [ classes [ "button", "is-dark" ]
+                                    , HE.onClick (HE.input_ Generate)
+                                    ]
+                                    [ HH.text "Generate" ]
+                                ]
+                            ]
                         ]
-                        [ HH.text "つくる" ]
+                    ]
+              , HH.div
+                    [ classes [ "modal", if isJust state.passwd then "is-active" else "" ] ]
+                    [ HH.div
+                        [ classes [ "modal-background" ]
+                        , HE.onClick (HE.input_ Clear)
+                        ]
+                        []
+                    , HH.div
+                        [ classes [ "modal-card" ] ]
+                        [ HH.header
+                            [ classes [ "modal-card-head" ] ]
+                            [ HH.h1
+                                [ classes [ "modal-card-title" ] ]
+                                [ HH.text "Result" ]
+                            , HH.button
+                                [ classes [ "delete" ]
+                                , HP.attr (HH.AttrName "aria-label") "close"
+                                , HE.onClick (HE.input_ Clear)
+                                ]
+                                []
+                            ]
+                        , HH.section
+                            [ classes [ "modal-card-body" ] ]
+                            [ HH.div
+                                [ classes [ "level" ] ]
+                                [ HH.div
+                                    [ classes [ "level-item", "has-text-centered", "is-size-3" ] ]
+                                    [ HH.br_
+                                    , HH.text $ fromMaybe "" state.passwd
+                                    , HH.br_
+                                    ]
+                                ]
+                            ]
+                        , HH.footer
+                            [ classes [ "modal-card-foot" ] ]
+                            [ HH.a
+                                [ classes [ "button", "is-success" ]
+                                , HP.href $ routeHref New
+                                ]
+                                [ HH.text "Save" ]
+                            , HH.button
+                                [ classes [ "button" ]
+                                , HE.onClick (HE.input_ Generate)
+                                ]
+                                [ HH.text "Regenerate" ]
+                            ]
+                        ]
                     ]
               ]
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message Aff
-          eval (Regenerate next) = do
+          eval (Clear next) = do
+              H.modify_ (_ { passwd = Nothing })
+              pure next
+
+          eval (Generate next) = do
               s <- H.get
               ep <- H.liftEffect $
                   let len = fromStrLength s.length
