@@ -132,9 +132,17 @@ ui =
                         , allChk: true
                         , chars: (Switch.toSwitch Switch.On) <$> (fromMaybe [] $ (Switch.label >>> _.charSet) <$> (state.policy !! 3))
                         }
-                    , if null state.errMsg
-                           then HH.text ""
-                           else HH.p [ classes [ "h3", "center", "border", "rounded" ] ] [ HH.text $ show state.errMsg ]
+                    , HH.div
+                        [ classes ["content", "message", "is-danger"] ]
+                        [ if null state.errMsg
+                            then HH.text ""
+                            else HH.div
+                                [ classes ["message-body"] ]
+                                [ HH.ul
+                                    [ classes ["is-marginless"] ] $
+                                    (\c -> HH.li [ classes ["is-danger"] ] [ HH.text c ]) <$> state.errMsg
+                                ]
+                        ]
                     ]
             　, HH.section
                     [ classes [ "level", "sticky-bottom", "box" ] ]
