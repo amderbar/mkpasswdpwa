@@ -3,7 +3,7 @@ module Mkpasswd.UI.Components.MultiChkboxes where
 import Prelude
 import Data.Array                 (mapWithIndex, (:))
 import Data.Char                  (fromCharCode)
-import Data.Maybe                 (Maybe(..), fromMaybe)
+import Data.Maybe                 (fromMaybe)
 import Data.String.CodeUnits      (singleton)
 import Halogen                 as H
 import Halogen.HTML            as HH
@@ -59,7 +59,11 @@ ui =
                         ]
                         [ HH.span
                             [ classes ["icon"] ]
-                            [ HH.text "▼" ]
+                            [ HH.i
+                                [ classes ["fas", "fa-angle-down"]
+                                , HP.attr (HH.AttrName "aria-hidden") "true"
+                                ] []
+                            ]
                         ]
                     ]
                  , if state.isOpenMulChk
@@ -83,30 +87,32 @@ ui =
                                     , HH.text "use all symbol"
                                     ]
                                 ]
-                            ] : flip mapWithIndex state.chars (\i c ->
-                                HH.div
-                                    [ classes ["field"] ]
-                                    [ HH.span
-                                        [ classes [ "controll" ] ]
-                                        [ HH.label
-                                            [ classes [ "checkbox" ] ]
-                                            [ HH.input
-                                                [ HP.type_ HP.InputCheckbox
-                                                , HP.checked $ Switch.isOn c
-                                                , classes [ "mr1" ]
-                                                    , HP.disabled state.disabled
-                                                , HE.onChange $ HE.input_ (OnCheck i)
-                                                ]
-                                            , HH.strong_
-                                                [ HH.text $ singleton $ fromMaybe '?' $ fromCharCode (Switch.label c) ]
+                            ]
+                        : HH.hr_
+                        : flip mapWithIndex state.chars (\i c ->
+                            HH.div
+                                [ classes ["field"] ]
+                                [ HH.span
+                                    [ classes [ "controll" ] ]
+                                    [ HH.label
+                                        [ classes [ "checkbox" ] ]
+                                        [ HH.input
+                                            [ HP.type_ HP.InputCheckbox
+                                            , HP.checked $ Switch.isOn c
+                                            , classes [ "mr1" ]
+                                                , HP.disabled state.disabled
+                                            , HE.onChange $ HE.input_ (OnCheck i)
                                             ]
+                                        , HH.strong_
+                                            [ HH.text $ singleton $ fromMaybe '?' $ fromCharCode (Switch.label c) ]
                                         ]
                                     ]
+                                ]
                             )
                     else HH.text ""
                  ]
 
-          eval :: forall m. Query ~> H.ComponentDSL State Query Message m
+          eval :: Query ~> H.ComponentDSL State Query Message m
           eval (ToggleMulChk f next) = do
              H.modify_ (_ { isOpenMulChk = f })
              pure next
