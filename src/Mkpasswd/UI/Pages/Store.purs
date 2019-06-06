@@ -5,7 +5,9 @@ import Mkpasswd.Data.States       (FormData, initialForm, validate)
 import Mkpasswd.Data.Validation   (ErrorCode(..))
 import Mkpasswd.Halogen.Util      (classes)
 import Mkpasswd.UI.Components.HeaderNav as Nav
+import Mkpasswd.UI.Element     as UI
 import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
+import Data.Array                 (null)
 import Data.Either                (Either(..))
 import Data.Generic.Rep           (class Generic)
 import Data.Generic.Rep.Show      (genericShow)
@@ -65,31 +67,35 @@ ui =
           render state =
             HH.main_
               [ HH.slot unit Nav.component unit absurd
-              , HH.div
-                    [ classes [ "flex-auto" , "flex", "flex-column" ] ]
-                    [ HH.h1 [ classes [ "center" ] ] [ HH.text "Store" ]
-                    , errorView $ show <$> state.error
+              , UI.container
+                    [ errorView state.error
                     , txtInput AccountInput state.form.account
                     , txtInput Passwdinput state.form.passwd
                     , txtArea NoteTextarea state.form.note
                     , HH.div
-                        [ classes [ "flex", "justify-center" ] ]
-                        [ HH.button
-                            [ classes [ "btn", "btn-primary", "mr2" ]
-                            , HE.onClick (HE.input_ Save)
+                        [ classes [ "field", "is-grouped" ] ]
+                        [ HH.span
+                            [ classes [ "control" ] ]
+                            [ HH.button
+                                [ classes [ "button", "is-dark" ]
+                                , HE.onClick (HE.input_ Save)
+                                ]
+                                [ HH.text "Save" ]
                             ]
-                            [ HH.text "Save" ]
-                        , HH.a
-                            [ classes [ "btn", "btn-primary", "bg-gray" ]
-                            , HP.href $ routeHref List
+                        , HH.span
+                            [ classes [ "control" ] ]
+                            [ HH.a
+                                [ classes [ "button" ]
+                                , HP.href $ routeHref List
+                                ]
+                                [ HH.text "Cancel" ]
                             ]
-                            [ HH.text "Cancel" ]
                         ]
                     ]
               ]
-          labelTxt AccountInput  = "アカウントID："
-          labelTxt Passwdinput   = "パスワード："
-          labelTxt NoteTextarea  = "備考："
+          labelTxt AccountInput  = "Title"
+          labelTxt Passwdinput   = "The Work"
+          labelTxt NoteTextarea  = "Description"
           queryType AccountInput = UpdateAccount
           queryType Passwdinput  = UpdatePasswd
           queryType NoteTextarea = UpdateNote
@@ -97,31 +103,42 @@ ui =
                 HH.input
                    [ HP.type_ HP.InputText
                    , HP.id_ $ show feildType
-                   , classes [ "col", "col-3", "input" ]
+                   , classes [ "input" ]
                    , HP.value currVal
                    , HE.onValueInput $ HE.input $ queryType feildType
                    ]
           txtArea feildType currVal = txtForm feildType $
                 HH.textarea
                    [ HP.id_ $ show feildType
-                   , classes [ "col", "col-3", "input" ]
+                   , classes [ "textarea" ]
                    , HP.value currVal
                    , HE.onValueInput $ HE.input $ queryType feildType
                    ]
           txtForm feildType inpHtmlElm =
                 HH.div
-                   [ classes [ "flex-none", "clearfix" ] ]
+                   [ classes [ "field" ] ]
                    [ HH.label
                         [ HP.for $ show feildType
-                        , classes [ "pr1", "col", "col-4", "right-align", "align-baseline", "label" ]
+                        , classes [ "label" ]
                         ]
                         [ HH.text $ labelTxt feildType ]
-                   , inpHtmlElm
+                   , HH.div
+                        [ classes ["control"] ]
+                        [ inpHtmlElm ]
                    ]
           errorView  Nothing = HH.text ""
           errorView  (Just error) =
-              HH.p [ classes [ "h3" , "center" , "border" , "border-red" ] ]
-                   [ HH.text error ]
+            HH.div
+                [ classes ["content", "message", "is-danger"] ]
+                [ if null error
+                    then HH.text ""
+                    else HH.div
+                        [ classes ["message-body"] ]
+                        [ HH.ul
+                            [ classes ["is-marginless"] ] $
+                            (\c -> HH.li [ classes ["is-danger"] ] [ HH.text c ]) <$> error
+                        ]
+                ]
 
           errorMsg OutOfRange   = "長過ぎます"
           errorMsg ValueMissing = "入力してください"
