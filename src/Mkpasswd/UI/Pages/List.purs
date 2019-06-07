@@ -7,6 +7,7 @@ import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Element     as UI
 import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
 import Data.Array                 (mapWithIndex, snoc, null)
+import Data.Maybe                 (Maybe(..))
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
@@ -24,10 +25,12 @@ data Message = DelPasswd Int
 
 type State =
     { list  :: Array FormData
+    , openMenuIndex :: Maybe Int
     }
 
 data Query a
     = Delete Int a
+    | ToggleMenu Int a
     | Receive Input a
 
 ui :: H.Component HH.HTML Query Input Message Aff
@@ -40,7 +43,7 @@ ui =
     }
     where
           initialState :: Input -> State
-          initialState = { list: _ }
+          initialState = { list: _ , openMenuIndex: Nothing }
 
           render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
@@ -56,7 +59,7 @@ ui =
                                 [ HH.text "There is no work" ]
                             ]
                         ]
-                    else (mapWithIndex accountRow state.list)
+                    else mapWithIndex (accountRow state.openMenuIndex) state.list
                 )
                 `snoc`
                 HH.div
@@ -76,7 +79,7 @@ ui =
                     ]
               ]
               
-          accountRow i fd =
+          accountRow mi i fd =
             HH.div
                 [ classes [ "card", "mb1" ] ]
                 [ HH.header
@@ -85,11 +88,19 @@ ui =
                         [ classes ["card-header-title", "text-wrap"] ]
                         [ HH.text fd.account ]
                     , HH.div
-                        [ classes [ "card-header-icon", "dropdown", "is-right", "is-hoverable" ]
+                        [ classes
+                            [ "card-header-icon"
+                            , "dropdown"
+                            , "is-right"
+                            , if mi == Just i
+                                then "is-active"
+                                else ""
+                            ]
                         ]
                         [ HH.a
                             [ classes ["dropdown-trigger"]
                             , HP.attr (HH.AttrName "aria-label") "more options"
+                            , HE.onClick $ HE.input_ (ToggleMenu i)
                             ]
                             [ HH.span
                                 [ classes ["icon"] ]
@@ -106,6 +117,7 @@ ui =
                                 [ HH.a
                                     [ classes ["dropdown-item"]
                                     , HP.href $ routeHref (Store i)
+                                    , HE.onClick $ HE.input_ (ToggleMenu i)
                                     ]
                                     [ HH.span
                                         [ classes [ "icon" ] ]
@@ -151,6 +163,10 @@ ui =
           eval (Delete i next) = do
              a <- H.liftEffect $ Web.window >>= Win.confirm "削除します。よろしいですか？" 
              when a $ H.raise $ DelPasswd i
+             eval (ToggleMenu i next)
+          eval (ToggleMenu i next) = do
+             mi <- _.openMenuIndex <$> H.get
+             H.modify_ (_ { openMenuIndex = if mi == Just i then Nothing else Just i})
              pure next
           eval (Receive s next) = do
              H.modify_ (_ { list = s })
