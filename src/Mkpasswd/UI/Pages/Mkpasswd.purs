@@ -197,7 +197,7 @@ ui =
                         , HH.footer
                             [ classes [ "modal-card-foot" ] ]
                             [ HH.a
-                                [ classes [ "button", "is-success" ]
+                                [ classes [ "button", "is-dark" ]
                                 , HP.href $ routeHref New
                                 ]
                                 [ HH.text "Save" ]
