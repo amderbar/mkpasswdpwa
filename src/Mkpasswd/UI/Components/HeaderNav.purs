@@ -72,13 +72,13 @@ render s =
             , HE.onClick $ HE.input_ (SetMenu false)
             , HP.href $ routeHref Index
             ]
-            [ HH.text "Build" ]
+            [ HH.text "Generate" ]
           , HH.a
             [ classes [ "navbar-item" ]
             , HE.onClick $ HE.input_ (SetMenu false)
             , HP.href $ routeHref List
             ]
-            [ HH.text "List" ]
+            [ HH.text "Gallery" ]
           ]
         , HH.div
           [ classes [ "navbar-end" ] ]
