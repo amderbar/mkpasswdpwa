@@ -4,8 +4,9 @@ import Prelude
 import Mkpasswd.Data.States       (FormData)
 import Mkpasswd.Halogen.Util      (classes)
 import Mkpasswd.UI.Components.HeaderNav as Nav
+import Mkpasswd.UI.Element     as UI
 import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
-import Data.Array                 (mapWithIndex)
+import Data.Array                 (mapWithIndex, snoc, null)
 import Effect.Aff                 (Aff)
 import Halogen                 as H
 import Halogen.HTML            as HH
@@ -45,47 +46,106 @@ ui =
           render state =
             HH.main_
               [ HH.slot unit Nav.component unit absurd
-              , HH.div
-                    [ classes [ "flex-auto" , "flex", "flex-column" ] ]
-                    [ HH.h1 [ classes [ "center" ] ] [ HH.text "List" ]
-                    , HH.a
-                        [ classes [ "mb1", "btn", "btn-primary", "self-center" ]
+              , UI.container $
+                ( if null state.list
+                    then
+                        [ HH.div
+                            [ classes ["message"] ]
+                            [ HH.div
+                                [ classes ["message-body", "text-wrap"] ]
+                                [ HH.text "There is no work" ]
+                            ]
+                        ]
+                    else (mapWithIndex accountRow state.list)
+                )
+                `snoc`
+                HH.div
+                    [ classes ["sticky-bottom", "p1", "is-pulled-right"] ]
+                    [ HH.a
+                        [ classes [ "button", "is-dark", "is-rounded" ]
                         , HP.href $ routeHref New
                         ]
-                        [ HH.text "new" ]
-                    , HH.table
-                        [ classes [ "col", "col-12", "border" ] ]
-                        [ HH.thead_
-                            [ HH.tr_
-                                [ HH.td_ []
-                                , HH.td_ [ HH.text "ID：" ]
-                                , HH.td_ [ HH.text "パスワード：" ]
-                                , HH.td_ [ HH.text "備考：" ]
-                                ]
+                        [ HH.span
+                            [ classes [ "icon" ] ]
+                            [ HH.i
+                                [ classes ["fas", "fa-plus"]
+                                , HP.attr (HH.AttrName "aria-hidden") "true"
+                                ] []
                             ]
-                        , HH.tbody_ $ mapWithIndex accountRow state.list
                         ]
                     ]
               ]
+              
           accountRow i fd =
-                HH.tr_
-                    [ HH.td
-                        [ classes [ "border-top" ] ]
-                        [ HH.a
-                            [ classes [ "btn", "btn-small", "btn-primary" ]
-                            , HP.href $ routeHref (Store i)
-                            ]
-                            [ HH.text "edit" ]
-                        , HH.a
-                            [ classes [ "ml1", "btn", "btn-small", "btn-outline" ]
-                            , HE.onClick (HE.input_ $ Delete i)
-                            ]
-                            [ HH.text "del" ]
+            HH.div
+                [ classes [ "card", "mb1" ] ]
+                [ HH.header
+                    [ classes ["card-header"] ]
+                    [ HH.h2
+                        [ classes ["card-header-title", "text-wrap"] ]
+                        [ HH.text fd.account ]
+                    , HH.div
+                        [ classes [ "card-header-icon", "dropdown", "is-right", "is-hoverable" ]
                         ]
-                    , HH.td [ classes [ "border-top" ] ] [ HH.text fd.account ]
-                    , HH.td [ classes [ "border-top" ] ] [ HH.text fd.passwd  ]
-                    , HH.td [ classes [ "border-top" ] ] [ HH.text fd.note ]
+                        [ HH.a
+                            [ classes ["dropdown-trigger"]
+                            , HP.attr (HH.AttrName "aria-label") "more options"
+                            ]
+                            [ HH.span
+                                [ classes ["icon"] ]
+                                [ HH.i
+                                    [ classes ["fas", "fa-ellipsis-v"]
+                                    , HP.attr (HH.AttrName "aria-hidden") "true"
+                                    ] []
+                                ]
+                            ]
+                        , HH.div
+                            [ classes ["dropdown-menu"] ]
+                            [ HH.div
+                                [ classes ["dropdown-content"] ]
+                                [ HH.a
+                                    [ classes ["dropdown-item"]
+                                    , HP.href $ routeHref (Store i)
+                                    ]
+                                    [ HH.span
+                                        [ classes [ "icon" ] ]
+                                        [ HH.i
+                                            [ classes ["fas", "fa-pen-fancy"]
+                                            , HP.attr (HH.AttrName "aria-hidden") "true"
+                                            ] []
+                                        ]
+                                    , HH.text "edit"
+                                    ]
+                                , HH.a
+                                    [ classes ["dropdown-item"]
+                                    , HE.onClick (HE.input_ $ Delete i)
+                                    ]
+                                    [ HH.span
+                                        [ classes [ "icon" ] ]
+                                        [ HH.i
+                                            [ classes ["fas", "fa-trash-alt"]
+                                            , HP.attr (HH.AttrName "aria-hidden") "true"
+                                            ] []
+                                        ]
+                                    , HH.text "remove"
+                                    ]
+                                ]
+                            ]
+                        ]
                     ]
+                , HH.div
+                    [ classes ["card-content"] ]
+                    [ HH.div
+                        [ classes ["message"] ]
+                        [ HH.div
+                            [ classes ["message-body", "text-wrap"] ]
+                            [ HH.text fd.passwd ]
+                        ]
+                    , HH.div
+                        [ classes ["text-wrap"] ]
+                        [ HH.text fd.note ]
+                    ]
+                ]
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message Aff
           eval (Delete i next) = do
