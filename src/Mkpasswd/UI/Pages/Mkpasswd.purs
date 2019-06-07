@@ -187,7 +187,7 @@ ui =
                             [ HH.div
                                 [ classes [ "level" ] ]
                                 [ HH.div
-                                    [ classes [ "level-item", "has-text-centered", "is-size-3" ] ]
+                                    [ classes [ "level-item", "has-text-centered", "is-size-3", "text-wrap" ] ]
                                     [ HH.br_
                                     , HH.text $ fromMaybe "" state.passwd
                                     , HH.br_
