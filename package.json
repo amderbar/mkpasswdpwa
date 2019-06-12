@@ -6,13 +6,13 @@
   "scripts": {
     "build": "spago bundle-app --to docs/app.js",
     "watch": "spago bundle-app --watch --to docs/app.js",
-    "serve": "http-server ./docs",
+    "serve": "live-server ./docs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "amderbar",
   "license": "MIT",
   "devDependencies": {
-    "http-server": "^0.11.1",
+    "live-server": "^1.2.1",
     "spago": "^0.8.0"
   },
   "dependencies": {
