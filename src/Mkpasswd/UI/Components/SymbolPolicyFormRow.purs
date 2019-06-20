@@ -16,17 +16,13 @@ import Halogen.HTML.Properties        as HP
 import Mkpasswd.Data.FieldType.Mkpasswd       (FieldType, labelTxt)
 import Mkpasswd.Data.Switch                   (Switch)
 import Mkpasswd.Halogen.Util                  (classes)
-import Mkpasswd.UI.Components.PolicyFormRow as PolRow
 import Mkpasswd.UI.Components.MultiChkboxes as MulChk
 
-type ChildQuery = PolRow.Query <\/> MulChk.Query <\/> Const Void
-type Slot  = Unit \/ Unit \/ Void
-
-cpPolRow :: HC.ChildPath PolRow.Query ChildQuery Unit Slot
-cpPolRow = HC.cp1
+type ChildQuery = MulChk.Query <\/> Const Void
+type Slot  = Unit \/ Void
 
 cpMulChk :: HC.ChildPath MulChk.Query ChildQuery Unit Slot
-cpMulChk = HC.cp2
+cpMulChk = HC.cp1
 
 type Input =
     { fieldType      :: FieldType
@@ -44,8 +40,14 @@ type Message =
     }
 type State = Input
 
+type PolRowMessage =
+    { fieldType      :: FieldType
+    , isUsed         :: Boolean
+    , requiredMinNum :: String
+    }
+
 data Query a
-    = OnInputMinNum PolRow.Message a
+    = OnInputMinNum PolRowMessage a
     | OnChangeChrChk MulChk.Message a
 
 ui :: forall m. MonadEffect m => H.Component HH.HTML Query Input Message m

@@ -10,6 +10,7 @@ data ErrorCode
     | ValueMissing
     | EmptyCharSet
     | TooShort
+    | TypeMismatch
     | Unknown
 
 derive instance genericErrorReason :: Generic ErrorCode _
