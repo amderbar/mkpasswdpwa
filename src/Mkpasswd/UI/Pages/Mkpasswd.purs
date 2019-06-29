@@ -1,17 +1,14 @@
 module Mkpasswd.UI.Pages.Mkpasswd where
 
 import Prelude
-import Data.Array                              ((!!), mapMaybe, null)
+import Data.Array                              ((!!), filter, mapMaybe)
 import Data.Const                              (Const)
-import Data.Either                             (Either(..), note, hush, either)
+import Data.Either                             (Either(..), note)
 import Data.Int                                (toNumber, fromString)
-import Data.Maybe                              (Maybe(..), fromMaybe, isJust)
+import Data.Maybe                              (Maybe(..), fromMaybe, isJust, maybe)
 import Data.Newtype                            (class Newtype)
-import Data.Tuple                              (Tuple, uncurry)
-import Data.Traversable                        (traverse)
-import Data.Validation.Semigroup               (toEither)
+import Data.Traversable                        (for, traverse)
 import DOM.HTML.Indexed.StepValue              (StepValue(..))
-import Effect                                  (Effect)
 import Effect.Aff                              (Aff)
 import Formless                              as F
 import Halogen                               as H
@@ -20,39 +17,27 @@ import Halogen.Data.Prism                      (type (<\/>), type (\/))
 import Halogen.HTML                          as HH
 import Halogen.HTML.Events                   as HE
 import Halogen.HTML.Properties               as HP
-
 import Mkpasswd                                     (mkpasswd)
-import Mkpasswd.Data.Array                          (modifyAt)
+import Mkpasswd.Data.Ascii                          (CharCode)
 import Mkpasswd.Data.FieldType.Mkpasswd             (FieldType(..), labelTxt)
-import Mkpasswd.Data.PasswdPolicy                   (PasswdPolicy, defaultLength, defaultPolicy)
-import Mkpasswd.Data.PasswdPolicy.Validation        (validate)
+import Mkpasswd.Data.PasswdPolicy                   (passwdPolicy, defaultLength, defaultPolicy)
 import Mkpasswd.Data.Switch                         (Switch)
 import Mkpasswd.Data.Switch                       as Switch
 import Mkpasswd.Data.Validation                     (ErrorCode(..))
 import Mkpasswd.Halogen.Util                        (classes)
+import Mkpasswd.UI.Components.HeaderNav           as Nav
+import Mkpasswd.UI.Components.MultiChkboxes       as MulChk
 import Mkpasswd.UI.Element                        as UI
 import Mkpasswd.UI.Routing                          (RouteHash(..), routeHref)
-import Mkpasswd.UI.Components.HeaderNav           as Nav
-import Mkpasswd.UI.Components.SymbolPolicyFormRow as SymRow
 
-newtype PolRowSlot = PRSlot Int
-
-derive newtype instance eqPolRowSlot  :: Eq PolRowSlot
-derive newtype instance ordPolRowSlot :: Ord PolRowSlot
-
-type PolRowQuery = F.Query' PolicyForm Aff
-
-type ChildQuery = Nav.Query <\/> PolRowQuery <\/> SymRow.Query <\/> Const Void
-type ChildSlot  = Unit \/ PolRowSlot \/ Unit \/ Void
+type ChildQuery = Nav.Query <\/> FormQuery <\/> Const Void
+type ChildSlot  = Unit \/ Unit \/ Void
 
 cpNav :: HC.ChildPath Nav.Query ChildQuery Unit ChildSlot
 cpNav = HC.cp1
 
-cpPolRow :: HC.ChildPath PolRowQuery ChildQuery PolRowSlot ChildSlot
-cpPolRow = HC.cp2
-
-cpSymRow :: HC.ChildPath SymRow.Query ChildQuery Unit ChildSlot
-cpSymRow = HC.cp3
+cpForm :: HC.ChildPath FormQuery ChildQuery Unit ChildSlot
+cpForm = HC.cp2
 
 type Input =
     Unit
@@ -61,18 +46,15 @@ type Message =
     Maybe String
 
 type State =
-    { length :: String
-    , policy :: Array (Switch { requiredMinNum :: String, charSet :: Array Int})
-    , passwd :: Maybe String
+    { passwd :: Maybe String
     , errMsg :: Array String
     }
 
 data Query a
     = Generate a
     | Clear a
-    | OnInputLength String a
-    | OnInputMinNum FieldType (F.Message' PolicyForm) a
-    | OnInputSymNum SymRow.Message a
+    | OnFormMsg (F.Message Query Form) a
+    | OnPolFromMsg (F.Message Query PolicyForm) a
 
 ui :: H.Component HH.HTML Query Input Message Aff
 ui =
@@ -84,12 +66,8 @@ ui =
     }
     where
           initialState :: Input -> State
-          initialState =
-              let fp = (\p -> p { requiredMinNum = show p.requiredMinNum }) <$> defaultPolicy
-               in const
-                     { length : show defaultLength
-                     , policy : (Switch.toSwitch Switch.On) <$> fp
-                     , passwd : Nothing
+          initialState = const
+                     { passwd : Nothing
                      , errMsg : []
                      }
 
@@ -98,73 +76,12 @@ ui =
             HH.main
               [ classes [ if isJust state.passwd then "is-clipped" else "" ] ]
               [ HH.slot' cpNav unit Nav.component unit absurd
-              , UI.container
-                    [ HH.div
-                        [ classes [ "field" ] ]
-                        [ HH.label
-                            [ HP.for "PasswdLength"
-                            , classes [ "pr1", "label" ]
-                            ]
-                            [ HH.text "Length" ]
-                        , HH.span
-                            [ classes [ "control" ] ]
-                            [ HH.input
-                                [ HP.type_ HP.InputNumber
-                                , HP.id_ "PasswdLength"
-                                , classes [ "input" ]
-                                , HP.value state.length
-                                , HE.onValueInput $ HE.input OnInputLength
-                                , HP.step Any
-                                , HP.max (toNumber 100)
-                                , HP.min (toNumber 0)
-                                ]
-                            ]
-                        ]
-                    , (\i -> HH.slot' cpPolRow (PRSlot 0) F.component i $ HE.input (OnInputMinNum DegitsNum))
-                        { initialInputs: F.wrapInputFields
-                            { isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 0)
-                            , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 0)
-                            }
-                        , validators
-                        , render: renderFormless DegitsNum
-                        }
-                    , (\i -> HH.slot' cpPolRow (PRSlot 1) F.component i $ HE.input (OnInputMinNum UppercaseNum))
-                        { initialInputs: F.wrapInputFields
-                            { isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 1)
-                            , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 1)
-                            }
-                        , validators
-                        , render: renderFormless UppercaseNum
-                        }
-                    , (\i -> HH.slot' cpPolRow (PRSlot 2) F.component i $ HE.input (OnInputMinNum LowercaseNum))
-                        { initialInputs: F.wrapInputFields
-                            { isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 2)
-                            , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 2)
-                            }
-                        , validators
-                        , render: renderFormless LowercaseNum
-                        }
-                    , (\i -> HH.slot' cpSymRow unit SymRow.ui i $ HE.input OnInputSymNum)
-                        { fieldType: SymbolNum
-                        , isUsed: fromMaybe false $ Switch.isOn <$> (state.policy !! 3)
-                        , requiredMinNum: fromMaybe "" $ (Switch.label >>> _.requiredMinNum) <$> (state.policy !! 3)
-                        , isOpenMulChk: false
-                        , allChk: true
-                        , chars: (Switch.toSwitch Switch.On) <$> (fromMaybe [] $ (Switch.label >>> _.charSet) <$> (state.policy !! 3))
-                        }
-                    , HH.div
-                        [ classes ["content", "message", "is-danger"] ]
-                        [ if null state.errMsg
-                            then HH.text ""
-                            else HH.div
-                                [ classes ["message-body"] ]
-                                [ HH.ul
-                                    [ classes ["is-marginless"] ] $
-                                    (\c -> HH.li [ classes ["is-danger"] ] [ HH.text c ]) <$> state.errMsg
-                                ]
-                        ]
-                    ]
-            　, HH.section
+              , (\i -> HH.slot' cpForm unit F.component i $ HE.input OnFormMsg)
+                    { initialInputs: F.wrapInputFields { length: show defaultLength, policy : Nothing }
+                    , validators
+                    , render: renderFormless
+                    }
+              , HH.section
                     [ classes [ "level", "sticky-bottom", "box" ] ]
                     [ HH.div
                         [ classes [ "level-item" ] ]
@@ -232,77 +149,138 @@ ui =
               ]
 
           eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message Aff
+          eval (OnFormMsg m next) = case m of
+              F.Emit q -> eval q *> pure next
+              _ -> pure next
+
+          eval (OnPolFromMsg m next) = case m of
+              F.Emit q -> eval q *> pure next
+              _ -> pure next
+
           eval (Clear next) = do
               H.modify_ (_ { passwd = Nothing })
               pure next
 
-          eval (Generate next) = do
-              s <- H.get
-              ep <- H.liftEffect $
-                  let len = fromStrLength s.length
-                      pol = fromInputPolicyArray s.policy
-                      vp  = join $ validateE <$> len <*> pol
-                   in case vp of
-                           Right prm -> uncurry mkpasswdE prm
-                           Left  err -> pure $ Left err
-              case ep of
-                   Right p -> H.modify_ (_ { errMsg = [], passwd = Just p })
-                   Left  e -> H.modify_ (_ { errMsg = e })
-              H.raise $ hush ep
-              pure next
+          eval (Generate next) = next <$ do
+              let fieldTypes =
+                    [ DegitsNum
+                    , UppercaseNum
+                    , LowercaseNum
+                    , SymbolNum
+                    ]
+              policyForm <- for fieldTypes \ft -> H.query' cpForm unit $ F.send ft F.submitReply
+              let policy = (map <<< map) F.unwrapOutputFields $ traverse join policyForm
+
+              _ <- H.query' cpForm unit $ F.set_ proxy.policy policy
+              res <- H.query' cpForm unit F.submitReply
+
+              maybeP <- H.liftEffect $ join <$> traverse mkpasswdFormless (join res)
+              when (isJust maybeP) $ H.modify_ (_ { passwd = maybeP })
+
               where
-                    fromStrMinNum :: forall p. { requiredMinNum :: String | p } -> Maybe { requiredMinNum :: Int | p }
-                    fromStrMinNum p = p { requiredMinNum = _ } <$> fromString p.requiredMinNum
+                  toPasswdPolicy p = passwdPolicy p.requiredMinNum (mapMaybe Switch.toMaybe p.charSet)
+                  mkpasswdFormless r =
+                      let s = F.unwrapOutputFields r
+                          t = s { policy = toPasswdPolicy <$> filter _.isUsed s.policy }
+                       in mkpasswd t.length t.policy
 
-                    fromStrLength :: String -> Either (Array String) Int
-                    fromStrLength l = note ["長さには数値を入れてください"] $ fromString l
+-- Formless
 
-                    fromInputPolicyArray :: Array (Switch { requiredMinNum :: String, charSet :: Array Int }) -> Either (Array String) (Array PasswdPolicy)
-                    fromInputPolicyArray p = note ["各文字種ごとの必要最低数には数値を入れてください"] $ traverse fromStrMinNum (mapMaybe Switch.toMaybe p)
+type FormQuery = F.Query Query PolRowQuery PolRowSlot Form Aff
 
-                    validateE :: Int -> Array PasswdPolicy -> Either (Array String) (Tuple Int (Array PasswdPolicy))
-                    validateE l p = either (\e -> Left $ showErr <$> e) (\v -> Right v) $ toEither $ validate l p
+newtype Form r f = Form (r
+  ( length :: f (Array ErrorCode) String Int
+  , policy :: f (Array ErrorCode) (Maybe (Array PolicyInfo)) (Array PolicyInfo)
+  ))
+derive instance newtypeForm :: Newtype (Form r f) _
 
-                    mkpasswdE :: Int -> Array PasswdPolicy -> Effect (Either (Array String) String)
-                    mkpasswdE l a = note [showErr Unknown] <$> mkpasswd l a
+proxy :: F.SProxies Form
+proxy = F.mkSProxies (F.FormProxy :: F.FormProxy Form)
 
-          eval (OnInputLength mi next) = do
-              H.modify_ (_ { length = mi })
-              pure next
+validators :: Form Record (F.Validation Form Aff)
+validators = Form
+    { length : F.hoistFnE_ $ note [TypeMismatch] <<< fromString
+    , policy : F.hoistFnE_ $ maybe (Left [EmptyCharSet]) Right
+    }
 
-          eval (OnInputMinNum fieldType m next) = case m of
-             F.Submitted formOutput -> do
-                 let r = F.unwrapOutputFields formOutput
-                 modifyPolicyRow fieldType (r {requiredMinNum = show r.requiredMinNum}) next
-             _ -> pure next
-
-          eval (OnInputSymNum r next) =
-             let idx = fieldIdx r.fieldType
-                 pm  = { isUsed: r.isUsed
-                       , requiredMinNum: r.requiredMinNum
-                       }
-              in do
-                 s <- H.get
-                 H.modify_ (_ { policy = modifyAt idx (map (_ { charSet = mapMaybe Switch.toMaybe r.chars })) s.policy })
-                 modifyPolicyRow r.fieldType pm next
-
-          fieldIdx :: FieldType -> Int
-          fieldIdx DegitsNum    = 0
-          fieldIdx UppercaseNum = 1
-          fieldIdx LowercaseNum = 2
-          fieldIdx SymbolNum    = 3
-
-          modifyPolicyRow :: forall a. FieldType -> {isUsed :: Boolean, requiredMinNum :: String} -> a -> H.ParentDSL State Query ChildQuery ChildSlot Message Aff a
-          modifyPolicyRow fieldType r next = do
-             let idx = fieldIdx fieldType
-             s <- H.get
-             let np = modifyAt idx (\w -> (_ { requiredMinNum = r.requiredMinNum }) <$> turn r.isUsed w) s.policy
-             H.modify_ (_ { policy = np })
-             pure next
-
-          turn :: forall a. Boolean -> Switch a -> Switch a
-          turn flg = if flg then Switch.on else Switch.off
-
+renderFormless :: F.State Form Aff -> F.HTML Query PolRowQuery PolRowSlot Form Aff
+renderFormless fstate =
+    UI.container
+        [ HH.div
+            [ classes [ "field" ] ]
+            [ HH.label
+                [ HP.for "PasswdLength"
+                , classes [ "pr1", "label" ]
+                ]
+                [ HH.text "Length" ]
+            , HH.span
+                [ classes [ "control" ] ]
+                [ HH.input
+                    [ HP.type_ HP.InputNumber
+                    , HP.id_ "PasswdLength"
+                    , classes
+                        [ "input"
+                        , if (isJust $ F.getError proxy.length fstate.form)
+                            then "is-danger"
+                            else ""
+                        ]
+                    , HP.value $ F.getInput proxy.length fstate.form
+                    , HE.onValueInput $ HE.input $ F.setValidate proxy.length
+                    , HP.step Any
+                    , HP.max (toNumber 100)
+                    , HP.min (toNumber 0)
+                    ]
+                ]
+            , HH.ul
+                [ classes ["help", "is-danger"] ]
+                $ (\msg -> HH.li_ [ HH.text (showErr msg) ])
+                <$> (fromMaybe [] $ F.getError proxy.length fstate.form)
+            ]
+        , (\i -> HH.slot DegitsNum F.component i $
+            HE.input (F.raise <<< H.action <<< OnPolFromMsg)
+          )
+            { initialInputs: F.wrapInputFields
+                { isUsed: true
+                , requiredMinNum: fromMaybe "" $ show <<< _.requiredMinNum <$> (defaultPolicy !! 0)
+                , charSet: (Switch.toSwitch Switch.On) <$> (fromMaybe [] $ _.charSet <$> (defaultPolicy !! 0))
+                }
+            , validators: validatorsPolicyRow
+            , render: renderPolicyRow DegitsNum
+            }
+        , (\i -> HH.slot UppercaseNum F.component i $
+            HE.input (F.raise <<< H.action <<< OnPolFromMsg)
+          )
+            { initialInputs: F.wrapInputFields
+                { isUsed: true
+                , requiredMinNum: fromMaybe "" $ show <<< _.requiredMinNum <$> (defaultPolicy !! 1)
+                , charSet: (Switch.toSwitch Switch.On) <$> (fromMaybe [] $ _.charSet <$> (defaultPolicy !! 1))
+                }
+            , validators: validatorsPolicyRow
+            , render: renderPolicyRow UppercaseNum
+            }
+        , (\i -> HH.slot LowercaseNum F.component i $
+            HE.input (F.raise <<< H.action <<< OnPolFromMsg)
+          )
+            { initialInputs: F.wrapInputFields
+                { isUsed: true
+                , requiredMinNum: fromMaybe "" $ show <<< _.requiredMinNum <$> (defaultPolicy !! 2)
+                , charSet: (Switch.toSwitch Switch.On) <$> (fromMaybe [] $ _.charSet <$> (defaultPolicy !! 2))
+                }
+            , validators: validatorsPolicyRow
+            , render: renderPolicyRow LowercaseNum
+            }
+        , (\i -> HH.slot SymbolNum F.component i $
+            HE.input (F.raise <<< H.action <<< OnPolFromMsg)
+          )
+            { initialInputs: F.wrapInputFields
+                { isUsed: true
+                , requiredMinNum: fromMaybe "" $ show <<< _.requiredMinNum <$> (defaultPolicy !! 3)
+                , charSet: (Switch.toSwitch Switch.On) <$> (fromMaybe [] $ _.charSet <$> (defaultPolicy !! 3))
+                }
+            , validators: validatorsPolicyRow
+            , render: renderPolicyRow SymbolNum
+            }
+        ]
 
 showErr :: ErrorCode -> String
 showErr =
@@ -314,29 +292,35 @@ showErr =
         TypeMismatch -> "各文字種ごとの必要最低数には数値を入れてください"
         Unknown      -> "なんかエラーになったんでリロードしてください"
 
+-- PolicyForm
 
--- Formless
+type PolRowQuery = F.Query Query MulChk.Query Unit PolicyForm Aff
+type PolRowSlot = FieldType
 
-newtype PolicyForm r f = PolicyForm (r
+type PolicyInfo = Record (PolicyRow F.OutputType)
+
+newtype PolicyForm r f = PolicyForm (r (PolicyRow f))
+derive instance newtypePolicyForm :: Newtype (PolicyForm r f) _
+
+type PolicyRow f =
   ( requiredMinNum :: f (Array ErrorCode) String Int
   , isUsed         :: f (Array ErrorCode) Boolean Boolean
-  ))
-derive instance newtypeForm :: Newtype (PolicyForm r f) _
+  , charSet        :: f (Array ErrorCode) (Array (Switch CharCode)) (Array (Switch CharCode))
+  )
 
-proxy :: F.SProxies PolicyForm
-proxy = F.mkSProxies (F.FormProxy :: F.FormProxy PolicyForm)
+proxyPolicyRow :: F.SProxies PolicyForm
+proxyPolicyRow = F.mkSProxies (F.FormProxy :: F.FormProxy PolicyForm)
 
-validators :: PolicyForm Record (F.Validation PolicyForm Aff)
-validators = PolicyForm
-    { requiredMinNum : isInt
-    , isUsed         : F.hoistFn_ (\i -> i)
+validatorsPolicyRow :: PolicyForm Record (F.Validation PolicyForm Aff)
+validatorsPolicyRow = PolicyForm
+    { requiredMinNum : F.hoistFnE_ $ note [TypeMismatch] <<< fromString
+    , isUsed         : F.hoistFn_ identity
+    , charSet        : F.hoistFn_ identity
     }
-    where
-        isInt = F.hoistFnE_ $ note [TypeMismatch] <<< fromString
 
-renderFormless :: forall m. FieldType -> F.State PolicyForm m -> F.HTML' PolicyForm m
-renderFormless fieldType fstate =
-    let isUsed = F.getInput proxy.isUsed fstate.form
+renderPolicyRow :: FieldType -> F.State PolicyForm Aff -> F.HTML Query MulChk.Query Unit PolicyForm Aff
+renderPolicyRow fieldType fstate =
+    let isUsed = F.getInput proxyPolicyRow.isUsed fstate.form
      in HH.div
         [ classes [ "field" ] ]
         [ HH.label
@@ -353,7 +337,7 @@ renderFormless fieldType fstate =
                         [ HP.type_ HP.InputCheckbox
                         , HP.checked isUsed
                         , classes [ "mr1" ]
-                        , HE.onChecked $ HE.input $ F.setValidate proxy.isUsed
+                        , HE.onChecked $ HE.input $ F.setValidate proxyPolicyRow.isUsed
                         ]
                     , HH.text "use it"
                     ]
@@ -365,12 +349,12 @@ renderFormless fieldType fstate =
                     , HP.id_ (show fieldType)
                     , classes
                         [ "input"
-                        , if (isJust $ F.getError proxy.requiredMinNum fstate.form)
+                        , if (isJust $ F.getError proxyPolicyRow.requiredMinNum fstate.form)
                             then "is-danger"
                             else ""
                         ]
-                    , HP.value $ F.getInput proxy.requiredMinNum fstate.form
-                    , HE.onValueInput $ HE.input $ F.setValidate proxy.requiredMinNum
+                    , HP.value $ F.getInput proxyPolicyRow.requiredMinNum fstate.form
+                    , HE.onValueInput $ HE.input $ F.setValidate proxyPolicyRow.requiredMinNum
                     , HP.step Any
                     , HP.min (toNumber 0)
                     , HP.max (toNumber 100)
@@ -381,6 +365,13 @@ renderFormless fieldType fstate =
         , HH.ul
             [ classes ["help", "is-danger"] ]
             $ (\msg -> HH.li_ [ HH.text (showErr msg) ])
-            <$> (fromMaybe [] $ F.getError proxy.requiredMinNum fstate.form)
+            <$> (fromMaybe [] $ F.getError proxyPolicyRow.requiredMinNum fstate.form)
+        , if fieldType == SymbolNum
+            then (\i -> HH.slot unit MulChk.ui i (HE.input $ F.setValidate proxyPolicyRow.charSet))
+                    { allChk: true
+                    , chars : F.getInput proxyPolicyRow.charSet fstate.form
+                    , isOpenMulChk: false
+                    , disabled: not isUsed
+                    }
+            else HH.text ""
         ]
-
