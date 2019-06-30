@@ -1,8 +1,8 @@
 module Mkpasswd.UI.Pages.Store where
 
 import Prelude
-import Mkpasswd.Data.States       (FormData, initialForm, requiredRule)
-import Mkpasswd.Data.Validation   (ErrorCode(..), chk, maxRule)
+import Mkpasswd.Data.States       (FormData, initialForm)
+import Mkpasswd.Data.Validation   (ErrorCode(..), chk, maxRule, requiredRule)
 import Mkpasswd.Halogen.Util      (classes)
 import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Element     as UI
@@ -13,7 +13,6 @@ import Data.Generic.Rep.Show      (genericShow)
 import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
 import Data.Newtype               (class Newtype)
 import Data.String                (length)
-import Data.Validation.Semigroup  (toEither)
 import Effect.Aff                 (Aff)
 import Formless                as F
 import Halogen                 as H
@@ -39,10 +38,7 @@ type Input = Maybe FormData
 
 data Message = SavePasswd FormData
 
-type State =
-    { form  :: FormData
-    , error :: Maybe (Array String)
-    }
+type State = FormData
 
 data FeildType
     = AccountInput
@@ -66,18 +62,14 @@ ui =
     }
     where
           initialState :: Input -> State
-          initialState inp =
-              let f = fromMaybe initialForm inp
-              in { form : f
-                 , error: Nothing
-                 }
+          initialState inp = fromMaybe initialForm inp
 
           render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
           render state =
             HH.main_
               [ HH.slot' cpNav unit Nav.component unit absurd
               , HH.slot' cpFrm unit F.component
-                { initialInputs: F.wrapInputFields state.form, validators, render: renderFormless }
+                { initialInputs: F.wrapInputFields state, validators, render: renderFormless }
                 (HE.input Formless)
               ]
 
@@ -109,10 +101,9 @@ validators = Form
   , note   : isUnder1000
   }
   where
-    adaptor v = F.hoistFnE_ (toEither <<< v)
-    isNonEmpty  = adaptor \v -> chk ValueMissing requiredRule v *> pure v
-    isUnder100  = adaptor \v -> chk OutOfRange (maxRule 100) (length v) *> pure v
-    isUnder1000 = adaptor \v -> chk OutOfRange (maxRule 1000) (length v) *> pure v
+    isNonEmpty  = F.hoistFnE_ (chk ValueMissing requiredRule)
+    isUnder100  = F.hoistFnE_ (\v -> chk OutOfRange (maxRule 100) (length v) *> pure v)
+    isUnder1000 = F.hoistFnE_ (\v -> chk OutOfRange (maxRule 1000) (length v) *> pure v)
 
 renderFormless :: forall m. F.State Form m -> F.HTML' Form m
 renderFormless fstate =

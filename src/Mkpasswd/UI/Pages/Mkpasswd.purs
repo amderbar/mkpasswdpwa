@@ -1,11 +1,12 @@
 module Mkpasswd.UI.Pages.Mkpasswd where
 
 import Prelude
+import Control.Alt                             ((<|>))
 import Data.Array                              ((!!), filter, mapMaybe)
 import Data.Const                              (Const)
-import Data.Either                             (Either(..), note)
-import Data.Int                                (toNumber, fromString)
-import Data.Maybe                              (Maybe(..), fromMaybe, isJust, maybe)
+import Data.Either                             (note)
+import Data.Int                                (toNumber)
+import Data.Maybe                              (Maybe(..), fromMaybe, isJust)
 import Data.Newtype                            (class Newtype)
 import Data.Traversable                        (for, traverse)
 import DOM.HTML.Indexed.StepValue              (StepValue(..))
@@ -20,15 +21,22 @@ import Halogen.HTML.Properties               as HP
 import Mkpasswd                                     (mkpasswd)
 import Mkpasswd.Data.Ascii                          (CharCode)
 import Mkpasswd.Data.FieldType.Mkpasswd             (FieldType(..), labelTxt)
-import Mkpasswd.Data.PasswdPolicy                   (passwdPolicy, defaultLength, defaultPolicy)
+import Mkpasswd.Data.PasswdPolicy                   (PasswdPolicy, passwdPolicy, defaultLength, defaultPolicy, requiredMinLength)
 import Mkpasswd.Data.Switch                         (Switch)
 import Mkpasswd.Data.Switch                       as Switch
 import Mkpasswd.Data.Validation                     (ErrorCode(..))
+import Mkpasswd.Data.Validation                   as V
 import Mkpasswd.Halogen.Util                        (classes)
 import Mkpasswd.UI.Components.HeaderNav           as Nav
 import Mkpasswd.UI.Components.MultiChkboxes       as MulChk
 import Mkpasswd.UI.Element                        as UI
 import Mkpasswd.UI.Routing                          (RouteHash(..), routeHref)
+
+maxLength :: Int
+maxLength = 100
+
+minLength :: Int
+minLength = 0
 
 type ChildQuery = Nav.Query <\/> FormQuery <\/> Const Void
 type ChildSlot  = Unit \/ Unit \/ Void
@@ -178,11 +186,9 @@ ui =
               when (isJust maybeP) $ H.modify_ (_ { passwd = maybeP })
 
               where
-                  toPasswdPolicy p = passwdPolicy p.requiredMinNum (mapMaybe Switch.toMaybe p.charSet)
                   mkpasswdFormless r =
                       let s = F.unwrapOutputFields r
-                          t = s { policy = toPasswdPolicy <$> filter _.isUsed s.policy }
-                       in mkpasswd t.length t.policy
+                       in mkpasswd s.length s.policy
 
 -- Formless
 
@@ -190,7 +196,7 @@ type FormQuery = F.Query Query PolRowQuery PolRowSlot Form Aff
 
 newtype Form r f = Form (r
   ( length :: f (Array ErrorCode) String Int
-  , policy :: f (Array ErrorCode) (Maybe (Array PolicyInfo)) (Array PolicyInfo)
+  , policy :: f (Array ErrorCode) (Maybe (Array PolicyInfo)) (Array PasswdPolicy)
   ))
 derive instance newtypeForm :: Newtype (Form r f) _
 
@@ -199,9 +205,19 @@ proxy = F.mkSProxies (F.FormProxy :: F.FormProxy Form)
 
 validators :: Form Record (F.Validation Form Aff)
 validators = Form
-    { length : F.hoistFnE_ $ note [TypeMismatch] <<< fromString
-    , policy : F.hoistFnE_ $ maybe (Left [EmptyCharSet]) Right
+    { length : required >>> int >>> range >>> enoughLong
+    , policy : exists >>> policy >>> nonEmpty
     }
+    where
+      required = F.hoistFnE_ (V.chk ValueMissing V.requiredRule)
+      int = F.hoistFnE_ (V.int TypeMismatch)
+      range = F.hoistFnE_ (V.chk OutOfRange $ V.rangeRule minLength maxLength)
+      exists = F.hoistFnE_ $ note [Invalid]
+      policy = F.hoistFn_ \i -> (\p -> passwdPolicy p.requiredMinNum p.charSet) <$> filter _.isUsed i
+      nonEmpty = F.hoistFnE_ (V.chk EmptyCharSet V.nonEmptyRule)
+      enoughLong = F.hoistFnE \form ->
+        let p = fromMaybe [] $ F.getOutput proxy.policy form
+        in V.chk TooShort $ V.minRule (requiredMinLength p)
 
 renderFormless :: F.State Form Aff -> F.HTML Query PolRowQuery PolRowSlot Form Aff
 renderFormless fstate =
@@ -227,8 +243,8 @@ renderFormless fstate =
                     , HP.value $ F.getInput proxy.length fstate.form
                     , HE.onValueInput $ HE.input $ F.setValidate proxy.length
                     , HP.step Any
-                    , HP.max (toNumber 100)
-                    , HP.min (toNumber 0)
+                    , HP.max (toNumber maxLength)
+                    , HP.min (toNumber minLength)
                     ]
                 ]
             , HH.ul
@@ -280,16 +296,21 @@ renderFormless fstate =
             , validators: validatorsPolicyRow
             , render: renderPolicyRow SymbolNum
             }
+        , HH.ul
+            [ classes ["help", "is-danger"] ]
+            $ (\msg -> HH.li_ [ HH.text (showErr msg) ])
+            <$> (fromMaybe [] $ F.getError proxy.policy fstate.form)
         ]
 
 showErr :: ErrorCode -> String
 showErr =
     case _ of
-        OutOfRange   -> "長過ぎます"
-        ValueMissing -> "入力してください"
-        EmptyCharSet -> "指定された文字種が空です"
+        OutOfRange   -> (show minLength) <> "と" <> (show maxLength)　<> "の間で入力してください"
+        ValueMissing -> "整数を入力してください"
+        EmptyCharSet -> "使用する文字を指定してください"
         TooShort     -> "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
-        TypeMismatch -> "各文字種ごとの必要最低数には数値を入れてください"
+        TypeMismatch -> "整数を入力してください"
+        Invalid      -> "エラーを解消してください"
         Unknown      -> "なんかエラーになったんでリロードしてください"
 
 -- PolicyForm
@@ -305,7 +326,7 @@ derive instance newtypePolicyForm :: Newtype (PolicyForm r f) _
 type PolicyRow f =
   ( requiredMinNum :: f (Array ErrorCode) String Int
   , isUsed         :: f (Array ErrorCode) Boolean Boolean
-  , charSet        :: f (Array ErrorCode) (Array (Switch CharCode)) (Array (Switch CharCode))
+  , charSet        :: f (Array ErrorCode) (Array (Switch CharCode)) (Array CharCode)
   )
 
 proxyPolicyRow :: F.SProxies PolicyForm
@@ -313,10 +334,18 @@ proxyPolicyRow = F.mkSProxies (F.FormProxy :: F.FormProxy PolicyForm)
 
 validatorsPolicyRow :: PolicyForm Record (F.Validation PolicyForm Aff)
 validatorsPolicyRow = PolicyForm
-    { requiredMinNum : F.hoistFnE_ $ note [TypeMismatch] <<< fromString
+    { requiredMinNum : (unUsed 0) <|> required >>> int >>> range
     , isUsed         : F.hoistFn_ identity
-    , charSet        : F.hoistFn_ identity
+    , charSet        : (unUsed [0]) <|> unSwitchAll >>> nonEmpty
     }
+    where
+      unUsed :: forall i o. o -> F.Validation PolicyForm Aff (Array ErrorCode) i o
+      unUsed o = F.hoistFnE $ \form _ -> V.chk Unknown (\_ -> not $ F.getInput proxyPolicyRow.isUsed form) o
+      required = F.hoistFnE_ (V.chk ValueMissing V.requiredRule)
+      int = F.hoistFnE_ (V.int TypeMismatch)
+      range = F.hoistFnE_ (V.chk OutOfRange $ V.rangeRule minLength maxLength)
+      unSwitchAll = F.hoistFn_ (mapMaybe Switch.toMaybe)
+      nonEmpty = F.hoistFnE_ (V.chk EmptyCharSet V.nonEmptyRule)
 
 renderPolicyRow :: FieldType -> F.State PolicyForm Aff -> F.HTML Query MulChk.Query Unit PolicyForm Aff
 renderPolicyRow fieldType fstate =
@@ -356,8 +385,8 @@ renderPolicyRow fieldType fstate =
                     , HP.value $ F.getInput proxyPolicyRow.requiredMinNum fstate.form
                     , HE.onValueInput $ HE.input $ F.setValidate proxyPolicyRow.requiredMinNum
                     , HP.step Any
-                    , HP.min (toNumber 0)
-                    , HP.max (toNumber 100)
+                    , HP.min (toNumber minLength)
+                    , HP.max (toNumber maxLength)
                     , HP.disabled (not isUsed)
                     ]
                 ]
@@ -365,7 +394,9 @@ renderPolicyRow fieldType fstate =
         , HH.ul
             [ classes ["help", "is-danger"] ]
             $ (\msg -> HH.li_ [ HH.text (showErr msg) ])
-            <$> (fromMaybe [] $ F.getError proxyPolicyRow.requiredMinNum fstate.form)
+            <$> ( (fromMaybe [] $ F.getError proxyPolicyRow.requiredMinNum fstate.form)
+                <> ((fromMaybe [] $ F.getError proxyPolicyRow.charSet fstate.form))
+                )
         , if fieldType == SymbolNum
             then (\i -> HH.slot unit MulChk.ui i (HE.input $ F.setValidate proxyPolicyRow.charSet))
                     { allChk: true
