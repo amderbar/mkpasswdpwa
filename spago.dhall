@@ -2,24 +2,8 @@
 Welcome to a Spago project!
 You can edit this file as you like.
 -}
-{ name =
-    "mkpasswdpwa"
-, dependencies =
-    [ "bifunctors"
-    , "console"
-    , "effect"
-    , "generics-rep"
-    , "halogen"
-    , "halogen-formless"
-    , "prelude"
-    , "psci-support"
-    , "random"
-    , "routing"
-    , "simple-json"
-    , "validation"
-    , "web-html"
-    , "web-storage"
-    ]
-, packages =
-    ./packages.dhall
+{ name = "my-project"
+, dependencies = [ "console", "effect", "halogen", "psci-support" ]
+, packages = ./packages.dhall
+, sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }
