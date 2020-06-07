@@ -13,3 +13,4 @@
 /.purs*
 /.psa*
 /.spago
+/docs/app.js
