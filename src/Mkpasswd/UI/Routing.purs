@@ -4,6 +4,7 @@ import Prelude
 import Data.Foldable             (oneOf)
 import Data.Generic.Rep          (class Generic)
 import Data.Generic.Rep.Show     (genericShow)
+import Data.Maybe                (Maybe(Just))
 import Effect                    (Effect)
 import Effect.Aff                (Aff, launchAff_)
 import Effect.Class              (liftEffect)
@@ -18,6 +19,7 @@ data RouteHash
     | Store Int
 
 derive instance eqRouteHash :: Eq RouteHash
+derive instance ordRouteHash :: Ord RouteHash
 derive instance genericRouteHash :: Generic RouteHash _
 instance showRouteHash :: Show RouteHash where
     show = genericShow
@@ -37,5 +39,5 @@ menuHash = oneOf
     ] <* end
 
 routing :: forall m a. (m Unit -> Aff a) -> (RouteHash -> Unit -> m Unit) -> Aff (Effect Unit)
-routing query hashAction = liftEffect $ matches menuHash \_ newHash ->
-      launchAff_ $ query $ H.action $ hashAction newHash
+routing query hashAction = liftEffect $ matches menuHash \mOld new ->
+    when ( mOld /= Just new ) $ launchAff_ $ query $ H.tell (hashAction new)

@@ -11,6 +11,7 @@ You can edit this file as you like.
   , "halogen"
   , "psci-support"
   , "quickcheck"
+  , "routing"
   , "strings"
   , "tailrec"
   ]
