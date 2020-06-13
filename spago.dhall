@@ -12,8 +12,10 @@ You can edit this file as you like.
   , "psci-support"
   , "quickcheck"
   , "routing"
+  , "simple-json"
   , "strings"
   , "tailrec"
+  , "web-storage"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

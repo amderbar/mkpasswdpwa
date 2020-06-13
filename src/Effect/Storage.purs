@@ -1,4 +1,4 @@
-module Mkpasswd.Data.Storage where
+module Effect.Storage where
 
 import Prelude
 import Data.Either                 (Either, note)
