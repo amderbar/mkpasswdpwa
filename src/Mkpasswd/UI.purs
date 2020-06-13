@@ -6,9 +6,15 @@ module Mkpasswd.UI
 
 import Prelude
 import Data.Maybe            (Maybe(..))
+import Data.Symbol           (SProxy(..))
 import Halogen             as H
 import Halogen.HTML        as HH
+import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Routing   (RouteHash(..), routing)
+
+type Slots = ( headerNav :: Nav.Slot Unit )
+
+_headerNav = SProxy :: SProxy "headerNav"
 
 type State =
   { route :: Maybe RouteHash
@@ -30,10 +36,11 @@ component =
 
   render state =
     HH.div_
-      [ HH.h1_ [ HH.text (show state.route) ]
+      [ HH.slot _headerNav unit Nav.component unit absurd
+      , HH.h1_ [ HH.text (show state.route) ]
       ]
 
-  handleQuery :: forall a u. Query u -> H.HalogenM State a () o m (Maybe u)
+  handleQuery :: forall a u. Query u -> H.HalogenM State a Slots o m (Maybe u)
   handleQuery = case _ of
     ChangeHash route a -> do
       mRoute <- H.gets _.route
