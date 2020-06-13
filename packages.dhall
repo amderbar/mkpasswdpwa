@@ -123,6 +123,20 @@ let upstream =
 
 let overrides = {=}
 
-let additions = {=}
+let additions =
+  { formless =
+      { dependencies =
+        [ "halogen"
+        , "variant"
+        , "heterogeneous"
+        , "generics-rep"
+        , "profunctor-lenses"
+        ]
+      , repo =
+        "https://github.com/thomashoneyman/purescript-halogen-formless.git"
+      , version =
+        "master"
+      }
+  }
 
 in  upstream // overrides // additions

@@ -7,6 +7,7 @@ You can edit this file as you like.
   [ "console"
   , "effect"
   , "foldable-traversable"
+  , "formless"
   , "gen"
   , "halogen"
   , "psci-support"

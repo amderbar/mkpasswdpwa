@@ -1,88 +1,73 @@
 module Mkpasswd.UI.Pages.Store where
 
 import Prelude
-import Mkpasswd.Data.States       (FormData, initialForm)
-import Mkpasswd.Data.Validation   (ErrorCode(..), chk, maxRule, requiredRule)
-import Mkpasswd.Halogen.Util      (classes)
-import Mkpasswd.UI.Components.HeaderNav as Nav
-import Mkpasswd.UI.Element     as UI
-import Mkpasswd.UI.Routing        (RouteHash(..), routeHref)
-import Data.Const                 (Const)
-import Data.Generic.Rep           (class Generic)
-import Data.Generic.Rep.Show      (genericShow)
-import Data.Maybe                 (Maybe(..), fromMaybe, isJust)
-import Data.Newtype               (class Newtype)
-import Data.String                (length)
-import Effect.Aff                 (Aff)
-import Formless                as F
-import Halogen                 as H
-import Halogen.Component.ChildPath as HC
-import Halogen.Data.Prism         (type (<\/>), type (\/))
-import Halogen.HTML            as HH
-import Halogen.HTML.Events     as HE
+import Data.Either (Either(..))
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Newtype (class Newtype)
+import Data.String as Str
+import Data.Symbol (SProxy(..))
+import Effect.Aff.Class (class MonadAff)
+import Formless as F
+import Halogen as H
+import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Routing.Hash               (setHash)
+import Mkpasswd.Data.States (FormData, initialForm)
+import Mkpasswd.UI.Components.HeaderNav as Nav
+import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
+import Routing.Hash (setHash)
 
-type FormlessQuery = F.Query' Form Aff
+type Slot id = forall q. H.Slot q Message id
 
-type ChildQuery = Nav.Query <\/> FormlessQuery <\/> Const Void
-type ChildSlot = Unit \/ Unit \/ Void
+type Slots =
+  ( headerNav :: Nav.Slot Unit
+  , formless :: F.Slot' Form FormData Unit
+  )
 
-cpNav :: HC.ChildPath Nav.Query ChildQuery Unit ChildSlot
-cpNav = HC.cp1
-
-cpFrm :: HC.ChildPath FormlessQuery ChildQuery Unit ChildSlot
-cpFrm = HC.cp2
-
-type Input = Maybe FormData
+_headerNav = SProxy :: SProxy "headerNav"
 
 data Message = SavePasswd FormData
 
-type State = FormData
+data Action
+    = Formless FormData
 
-data FeildType
-    = AccountInput
-    | Passwdinput
-    | NoteTextarea
+component :: forall q m. MonadAff m => H.Component HH.HTML q (Maybe FormData) Message m
+component =
+  H.mkComponent
+  { initialState
+  , render
+  , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+  }
+  where
+  initialState :: Maybe FormData -> FormData
+  initialState = fromMaybe initialForm
 
-derive instance genericFeildType :: Generic FeildType _
-instance showFeildType :: Show FeildType where
-    show = genericShow
+  render :: FormData -> H.ComponentHTML Action Slots m
+  render state =
+    HH.main_
+      [ HH.slot _headerNav unit Nav.component unit absurd
+      , HH.section
+        [ HP.classes $ HH.ClassName <$> [ "section" ] ]
+        [ HH.slot F._formless unit (F.component formInput spec) state (Just <<< Formless) ]
+      ]
 
-data Query a
-    = Formless (F.Message' Form) a
-
-ui :: H.Component HH.HTML Query Input Message Aff
-ui =
-  H.parentComponent
-    { initialState
-    , render
-    , eval
-    , receiver : const Nothing
-    }
-    where
-          initialState :: Input -> State
-          initialState inp = fromMaybe initialForm inp
-
-          render :: State -> H.ParentHTML Query ChildQuery ChildSlot Aff
-          render state =
-            HH.main_
-              [ HH.slot' cpNav unit Nav.component unit absurd
-              , HH.slot' cpFrm unit F.component
-                { initialInputs: F.wrapInputFields state, validators, render: renderFormless }
-                (HE.input Formless)
-              ]
-
-          eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Message Aff
-          eval (Formless m a) = case m of
-             F.Submitted formOutput -> a <$ do
-                let form = F.unwrapOutputFields formOutput
-                H.liftEffect $ setHash $ routeHref List
-                H.raise $ SavePasswd form
-             _ -> pure a
-
+  handleAction :: Action -> H.HalogenM FormData Action Slots Message m Unit
+  handleAction  = case _ of
+    Formless fd -> do
+      H.liftEffect $ setHash $ routeHref List
+      H.raise $ SavePasswd fd
 
 -- Formless
+
+data ErrorCode
+    = OutOfRange
+    | ValueMissing
+
+derive instance genericErrorReason :: Generic ErrorCode _
+instance showErrorReason :: Show ErrorCode where
+  show = genericShow
 
 newtype Form r f = Form (r
   ( account :: f (Array ErrorCode) String String
@@ -91,124 +76,127 @@ newtype Form r f = Form (r
   ))
 derive instance newtypeForm :: Newtype (Form r f) _
 
-proxy :: F.SProxies Form
-proxy = F.mkSProxies (F.FormProxy :: F.FormProxy Form)
-
-validators :: Form Record (F.Validation Form Aff)
-validators = Form
-  { account: isNonEmpty >>> isUnder100
-  , passwd : isNonEmpty >>> isUnder100
-  , note   : isUnder1000
+formInput :: forall m. Monad m => FormData -> F.Input' Form m
+formInput fd =
+  { initialInputs: Just (F.wrapInputFields fd)
+  , validators: Form
+    { account: isNonEmpty >>> isUnder100
+    , passwd : isNonEmpty >>> isUnder100
+    , note   : isUnder1000
+    }
   }
   where
-    isNonEmpty  = F.hoistFnE_ (chk ValueMissing requiredRule)
-    isUnder100  = F.hoistFnE_ (\v -> chk OutOfRange (maxRule 100) (length v) *> pure v)
-    isUnder1000 = F.hoistFnE_ (\v -> chk OutOfRange (maxRule 1000) (length v) *> pure v)
+    chk :: forall e v. e -> (v -> Boolean) -> v -> Either (Array e) v
+    chk e r v = if r v then pure v else Left [e]
+    isNonEmpty  = F.hoistFnE_ (chk ValueMissing $ not Str.null)
+    isUnder100  = F.hoistFnE_ (\v -> chk OutOfRange (_ <= 100) (Str.length v) *> pure v)
+    isUnder1000 = F.hoistFnE_ (\v -> chk OutOfRange (_ <= 1000) (Str.length v) *> pure v)
 
-renderFormless :: forall m. F.State Form m -> F.HTML' Form m
-renderFormless fstate =
-  UI.container
-    [ HH.div
-        [ classes [ "field" ] ]
-        [ HH.label
-            [ HP.for $ show AccountInput
-            , classes [ "label" ]
-            ]
-            [ HH.text "Title" ]
-        , HH.div
-            [ classes ["control"] ]
-            [ HH.input
-                [ HP.type_ HP.InputText
-                , HP.id_ $ show AccountInput
-                , classes
-                    [ "input"
-                    , if (isJust $ F.getError proxy.account fstate.form)
-                        then "is-danger"
-                        else ""
-                    ]
-                , HP.value $ F.getInput proxy.account fstate.form
-                , HE.onValueInput $ HE.input $ F.setValidate proxy.account
-                ]
-            ]
-        , HH.ul
-            [ classes ["help", "is-danger"] ]
-            $ (\msg -> HH.li_ [ HH.text (errorMsg msg) ])
-            <$> (fromMaybe [] $ F.getError proxy.account fstate.form)
-        ]
-    , HH.div
-        [ classes [ "field" ] ]
-        [ HH.label
-            [ HP.for $ show Passwdinput
-            , classes [ "label" ]
-            ]
-            [ HH.text "The Work" ]
-        , HH.div
-            [ classes ["control"] ]
-            [ HH.input
-                [ HP.type_ HP.InputText
-                , HP.id_ $ show Passwdinput
-                , classes
-                    [ "input"
-                    , if (isJust $ F.getError proxy.passwd fstate.form)
-                        then "is-danger"
-                        else ""
-                    ]
-                , HP.value $ F.getInput proxy.passwd fstate.form
-                , HE.onValueInput $ HE.input $ F.setValidate proxy.passwd
-                ]
-            ]
-        , HH.ul
-            [ classes ["help", "is-danger"] ]
-            $ (\msg -> HH.li_ [ HH.text (errorMsg msg) ])
-            <$> (fromMaybe [] $ F.getError proxy.passwd fstate.form)
-        ]
-    , HH.div
-        [ classes [ "field" ] ]
-        [ HH.label
-            [ HP.for $ show NoteTextarea
-            , classes [ "label" ]
-            ]
-            [ HH.text "Description" ]
-        , HH.div
-            [ classes ["control"] ]
-            [ HH.textarea
-                [ HP.id_ $ show NoteTextarea
-                , classes
-                    [ "textarea"
-                    , if (isJust $ F.getError proxy.note fstate.form)
-                        then "is-danger"
-                        else ""
-                    ]
-                , HP.value $ F.getInput proxy.note fstate.form
-                , HE.onValueInput $ HE.input $ F.setValidate proxy.note
-                ]
-            ]
-        , HH.ul
-            [ classes ["help", "is-danger"] ]
-            $ (\msg -> HH.li_ [ HH.text (errorMsg msg) ])
-            <$> (fromMaybe [] $ F.getError proxy.note fstate.form)
-        ]
-    , HH.div
-        [ classes [ "field", "is-grouped" ] ]
-        [ HH.span
-            [ classes [ "control" ] ]
-            [ HH.button
-                [ classes [ "button", "is-dark" ]
-                , HE.onClick $ HE.input_ F.Submit
-                ]
-                [ HH.text "Save" ]
-            ]
-        , HH.span
-            [ classes [ "control" ] ]
-            [ HH.a
-                [ classes [ "button" ]
-                , HP.href $ routeHref List
-                ]
-                [ HH.text "Cancel" ]
-            ]
-        ]
-    ]
+data FieldType
+  = AccountInput
+  | Passwdinput
+  | NoteTextarea
+
+derive instance genericFieldType :: Generic FieldType _
+instance showFieldType :: Show FieldType where
+  show = genericShow
+
+spec :: forall i m. Monad m => F.Spec' Form FormData i m
+spec = F.defaultSpec { render = render, handleEvent = F.raiseResult }
   where
-    errorMsg OutOfRange   = "長過ぎます"
-    errorMsg ValueMissing = "入力してください"
-    errorMsg _            = "なんかエラーになったんでリロードしてください"
+  _account = SProxy :: SProxy "account"
+  _passwd = SProxy :: SProxy "passwd"
+  _note = SProxy :: SProxy "note"
+
+  errorMsg :: ErrorCode -> String
+  errorMsg = case _ of
+    OutOfRange -> "長過ぎます"
+    ValueMissing -> "入力してください"
+
+  render fstate =
+    HH.div
+      [ HP.classes $ HH.ClassName <$> [ "container" ] ] 
+      [ HH.div
+        [ HP.classes $ HH.ClassName <$> [ "field" ] ]
+        [ labelBlock AccountInput "Title"
+        , inputTextForm AccountInput (F.getError _account fstate.form) (F.getInput _account fstate.form) (Just <<< F.setValidate _account)
+        , errorDisplay (F.getError _account fstate.form)
+        ]
+      , HH.div
+        [ HP.classes $ HH.ClassName <$> [ "field" ] ]
+        [ labelBlock Passwdinput "The Work"
+        , inputTextForm Passwdinput (F.getError _passwd fstate.form) (F.getInput _passwd fstate.form) (Just <<< F.setValidate _passwd)
+        , errorDisplay (F.getError _passwd fstate.form)
+        ]
+      , HH.div
+        [ HP.classes $ HH.ClassName <$> [ "field" ] ]
+        [ labelBlock NoteTextarea "Description"
+        , textAreaForm NoteTextarea (F.getError _note fstate.form) (F.getInput _note fstate.form) (Just <<< F.setValidate _note)
+        , errorDisplay (F.getError _note fstate.form)
+        ]
+      , HH.div
+        [ HP.classes $ HH.ClassName <$> [ "field", "is-grouped" ] ]
+        [ HH.span
+          [ HP.classes $ HH.ClassName <$> [ "control" ] ]
+          [ HH.button
+            [ HP.classes $ HH.ClassName <$> [ "button", "is-dark" ]
+            , HE.onClick \_ -> Just F.submit
+            ]
+            [ HH.text "Save" ]
+          ]
+        , HH.span
+          [ HP.classes $ HH.ClassName <$> [ "control" ] ]
+          [ HH.a
+            [ HP.classes $ HH.ClassName <$> [ "button" ]
+            , HP.href $ routeHref List
+            ]
+            [ HH.text "Cancel" ]
+          ]
+        ]
+      ]
+
+  labelBlock fieldType labelTxt =
+    HH.label
+      [ HP.for $ show fieldType
+      , HP.classes $ HH.ClassName <$> [ "label" ]
+      ]
+      [ HH.text labelTxt ]
+
+  inputTextForm fieldType err inp onInput =
+    HH.div
+      [ HP.classes $ HH.ClassName <$> ["control"] ]
+      [ HH.input
+        [ HP.type_ HP.InputText
+        , HP.id_ $ show fieldType
+        , HP.classes $ HH.ClassName <$>
+          [ "input"
+          , if (isJust err)
+            then "is-danger"
+            else ""
+          ]
+        , HP.value inp
+        , HE.onValueInput onInput
+        ]
+      ]
+
+  textAreaForm fieldType err inp onInput =
+    HH.div
+      [ HP.classes $ HH.ClassName <$> ["control"] ]
+      [ HH.textarea
+        [ HP.id_ $ show fieldType
+        , HP.classes $ HH.ClassName <$>
+          [ "textarea"
+          , if (isJust err)
+            then "is-danger"
+            else ""
+          ]
+        , HP.value inp
+        , HE.onValueInput onInput
+        ]
+      ]
+  
+  errorDisplay err =
+    HH.ul
+      [ HP.classes $ HH.ClassName <$> ["help", "is-danger"] ] $
+      (\msg -> HH.li_ [ HH.text (errorMsg msg) ]) <$>
+        (fromMaybe [] $ err)
