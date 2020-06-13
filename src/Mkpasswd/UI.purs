@@ -16,16 +16,20 @@ import Effect.Storage        (fetch, save)
 import Foreign               (ForeignError)
 import Halogen             as H
 import Halogen.HTML        as HH
+import Halogen.HTML.Properties as HP
 import Mkpasswd.Data.States  (FormData, initialForm)
+import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Pages.List as ListPage
 import Mkpasswd.UI.Pages.Store as StorePage
 import Mkpasswd.UI.Routing   (RouteHash(..), routing)
 
 type Slots =
-  ( listPage :: ListPage.Slot Unit
+  ( headerNav :: Nav.Slot Unit
+  , listPage :: ListPage.Slot Unit
   , storePage :: StorePage.Slot Unit
   )
 
+_headerNav = SProxy :: SProxy "headerNav"
 _listPage = SProxy :: SProxy "listPage"
 _storePage = SProxy :: SProxy "storePage"
 
@@ -63,12 +67,18 @@ component =
     }
 
   render {route, storage, passwd} =
-    case route of
-      -- Index   -> HH.slot cpMkpasswd unit Mk.ui unit (HE.input Mkpasswd)
-      Index   -> HH.div_ [HH.h1_ [ HH.text (show route) ]]
-      List    -> HH.slot _listPage unit ListPage.component storage (Just <<< Delete)
-      New     -> HH.slot _storePage unit StorePage.component (initialForm { passwd = _ } <$> passwd) (Just <<< Save)
-      Store i -> HH.slot _storePage unit StorePage.component (storage !! i) (Just <<< Save)
+    HH.main_
+    [ HH.slot _headerNav unit Nav.component unit absurd
+    , HH.section
+      [ HP.classes $ HH.ClassName <$> [ "section" ] ]
+      [ case route of
+        -- Index   -> HH.slot cpMkpasswd unit Mk.ui unit (HE.input Mkpasswd)
+        Index   -> HH.div_ [HH.h1_ [ HH.text (show route) ]]
+        List    -> HH.slot _listPage unit ListPage.component storage (Just <<< Delete)
+        New     -> HH.slot _storePage unit StorePage.component (initialForm { passwd = _ } <$> passwd) (Just <<< Save)
+        Store i -> HH.slot _storePage unit StorePage.component (storage !! i) (Just <<< Save)
+      ]
+    ]
 
   wsKey :: String
   wsKey = "mkpasswd"

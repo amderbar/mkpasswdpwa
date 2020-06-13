@@ -15,18 +15,14 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Mkpasswd.Data.States (FormData, initialForm)
-import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
 import Routing.Hash (setHash)
 
 type Slot id = forall q. H.Slot q NewFormData id
 
 type Slots =
-  ( headerNav :: Nav.Slot Unit
-  , formless :: F.Slot' Form FormData Unit
+  ( formless :: F.Slot' Form FormData Unit
   )
-
-_headerNav = SProxy :: SProxy "headerNav"
 
 type NewFormData = FormData
 
@@ -45,13 +41,7 @@ component =
   initialState = fromMaybe initialForm
 
   render :: FormData -> H.ComponentHTML Action Slots m
-  render state =
-    HH.main_
-      [ HH.slot _headerNav unit Nav.component unit absurd
-      , HH.section
-        [ HP.classes $ HH.ClassName <$> [ "section" ] ]
-        [ HH.slot F._formless unit (F.component formInput spec) state (Just <<< Formless) ]
-      ]
+  render state = HH.slot F._formless unit (F.component formInput spec) state (Just <<< Formless)
 
   handleAction :: Action -> H.HalogenM FormData Action Slots NewFormData m Unit
   handleAction  = case _ of
