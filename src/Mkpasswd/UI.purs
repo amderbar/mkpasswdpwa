@@ -38,8 +38,8 @@ type State =
 
 data Action
     = Load
-    | Save StorePage.Message
-    | Delete ListPage.Message
+    | Save FormData
+    | Delete Int
 
 data Query a = ChangeHash RouteHash a
 
@@ -81,7 +81,7 @@ component =
         Right fd -> H.modify_ _ { storage = (fd :: Array FormData) }
         Left  er -> H.modify_ _ { error   = toList er }
 
-    Save (StorePage.SavePasswd fd) -> do
+    Save fd -> do
       s <- H.get
       let st = fromMaybe (snoc s.storage fd) $ (\i -> updateAt i fd s.storage) =<< (forcusIdx s.route)
       H.modify_ _ { storage = st }
@@ -92,7 +92,7 @@ component =
         Store i   -> Just i
         otherwise -> Nothing
 
-    Delete (ListPage.DelPasswd i) -> do
+    Delete i -> do
       s <- H.get
       let newSt = deleteAt i s.storage
       newSt # maybe (pure unit) \st -> do

@@ -19,7 +19,7 @@ import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
 import Routing.Hash (setHash)
 
-type Slot id = forall q. H.Slot q Message id
+type Slot id = forall q. H.Slot q NewFormData id
 
 type Slots =
   ( headerNav :: Nav.Slot Unit
@@ -28,12 +28,12 @@ type Slots =
 
 _headerNav = SProxy :: SProxy "headerNav"
 
-data Message = SavePasswd FormData
+type NewFormData = FormData
 
 data Action
     = Formless FormData
 
-component :: forall q m. MonadAff m => H.Component HH.HTML q (Maybe FormData) Message m
+component :: forall q m. MonadAff m => H.Component HH.HTML q (Maybe FormData) NewFormData m
 component =
   H.mkComponent
   { initialState
@@ -53,11 +53,11 @@ component =
         [ HH.slot F._formless unit (F.component formInput spec) state (Just <<< Formless) ]
       ]
 
-  handleAction :: Action -> H.HalogenM FormData Action Slots Message m Unit
+  handleAction :: Action -> H.HalogenM FormData Action Slots NewFormData m Unit
   handleAction  = case _ of
     Formless fd -> do
       H.liftEffect $ setHash $ routeHref List
-      H.raise $ SavePasswd fd
+      H.raise fd
 
 -- Formless
 

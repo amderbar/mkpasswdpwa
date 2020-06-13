@@ -15,7 +15,7 @@ import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
 import Web.HTML as Web
 import Web.HTML.Window as Win
 
-type Slot id = forall q. H.Slot q Message id
+type Slot id = forall q. H.Slot q DeleteTargetIdx id
 
 type Slots = ( headerNav :: Nav.Slot Unit )
 
@@ -23,7 +23,7 @@ _headerNav = SProxy :: SProxy "headerNav"
 
 type Input = Array FormData
 
-data Message = DelPasswd Int
+type DeleteTargetIdx = Int
 
 type State =
   { list  :: Array FormData
@@ -35,7 +35,7 @@ data Action
   | ToggleMenu Int
   | Receive Input
 
-component :: forall q m. MonadEffect m => H.Component HH.HTML q Input Message m
+component :: forall q m. MonadEffect m => H.Component HH.HTML q Input DeleteTargetIdx m
 component =
   H.mkComponent
   { initialState
@@ -176,11 +176,11 @@ footerBtnArea =
     ]
   ]
 
-handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action Slots Message m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action Slots DeleteTargetIdx m Unit
 handleAction = case _ of
   Delete i -> do
     a <- H.liftEffect $ Web.window >>= Win.confirm "削除します。よろしいですか？" 
-    when a $ H.raise $ DelPasswd i
+    when a $ H.raise i
     handleAction (ToggleMenu i)
 
   ToggleMenu i -> do
