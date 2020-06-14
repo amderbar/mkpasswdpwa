@@ -1,8 +1,8 @@
 module Data.Char.Gen.Visibles where
 
-import Prelude           ((<$>), bottom, top)
+import Prelude ((<$>), bottom, top)
 import Control.Monad.Gen (class MonadGen, chooseInt)
-import Data.Enum         (toEnumWithDefaults)
+import Data.Enum (toEnumWithDefaults)
 
 -- | Generates a character in the visible ASCII character set.
 genAsciiChar' :: forall m. MonadGen m => m Char

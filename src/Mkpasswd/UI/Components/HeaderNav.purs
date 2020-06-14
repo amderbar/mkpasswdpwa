@@ -1,20 +1,22 @@
 module Mkpasswd.UI.Components.HeaderNav where
 
 import Prelude
-import Mkpasswd.UI.Routing         (RouteHash(..), routeHref)
-import Data.Maybe                  (Maybe(..))
-import Halogen                     as H
-import Halogen.HTML                as HH
-import Halogen.HTML.Events         as HE
-import Halogen.HTML.Properties     as HP
+import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
+import Data.Maybe (Maybe(..))
+import Halogen as H
+import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
+import Halogen.HTML.Properties as HP
 
-type Slot id = forall q. H.Slot q Void id
+type Slot id
+  = forall q. H.Slot q Void id
 
-type State =
-  { isMenuActive :: Boolean
-  }
+type State
+  = { isMenuActive :: Boolean
+    }
 
-data Action = SetMenu Boolean
+data Action
+  = SetMenu Boolean
 
 component :: forall q i o m. H.Component HH.HTML q i o m
 component =
@@ -26,7 +28,7 @@ component =
 
 initialState :: forall i. i -> State
 initialState _ =
-  { isMenuActive : false
+  { isMenuActive: false
   }
 
 render :: forall m. State -> H.ComponentHTML Action () m
@@ -37,54 +39,54 @@ render s =
     , HP.attr (HH.AttrName "aria-label") "main navigation"
     ]
     [ HH.div
-      [ HP.classes $ HH.ClassName <$> [ "container" ] ]
-      [ HH.div
-        [ HP.classes $ HH.ClassName <$> [ "navbar-brand" ] ]
-        [ HH.a
-          [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
-          , HP.href $ routeHref Index
-          ]
-          [ HH.strong_ [ HH.text "RandomStr" ] ]
-        , HH.a
-          [ HP.classes $ HH.ClassName <$> [ "navbar-burger", "burger" ]
-          , HP.attr (HH.AttrName "role") "button"
-          , HP.attr (HH.AttrName "aria-label") "menu"
-          , HP.attr (HH.AttrName "aria-expanded") "button"
-          , HE.onClick \_ -> Just (SetMenu $ not s.isMenuActive)
-          ]
-          [ HH.span [ HP.attr (HH.AttrName "aria-hidden") "true" ] []
-          , HH.span [ HP.attr (HH.AttrName "aria-hidden") "true" ] []
-          , HH.span [ HP.attr (HH.AttrName "aria-hidden") "true" ] []
-          ]
-        ]
-      , HH.div
-        [ HP.classes $ HH.ClassName <$> [ "navbar-menu", if s.isMenuActive then "is-active" else "" ] ]
+        [ HP.classes $ HH.ClassName <$> [ "container" ] ]
         [ HH.div
-          [ HP.classes $ HH.ClassName <$> [ "navbar-start" ] ]
-          [ HH.a
-            [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
-            , HE.onClick  \_ -> Just (SetMenu false)
-            , HP.href $ routeHref Index
+            [ HP.classes $ HH.ClassName <$> [ "navbar-brand" ] ]
+            [ HH.a
+                [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
+                , HP.href $ routeHref Index
+                ]
+                [ HH.strong_ [ HH.text "RandomStr" ] ]
+            , HH.a
+                [ HP.classes $ HH.ClassName <$> [ "navbar-burger", "burger" ]
+                , HP.attr (HH.AttrName "role") "button"
+                , HP.attr (HH.AttrName "aria-label") "menu"
+                , HP.attr (HH.AttrName "aria-expanded") "button"
+                , HE.onClick \_ -> Just (SetMenu $ not s.isMenuActive)
+                ]
+                [ HH.span [ HP.attr (HH.AttrName "aria-hidden") "true" ] []
+                , HH.span [ HP.attr (HH.AttrName "aria-hidden") "true" ] []
+                , HH.span [ HP.attr (HH.AttrName "aria-hidden") "true" ] []
+                ]
             ]
-            [ HH.text "Generate" ]
-          , HH.a
-            [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
-            , HE.onClick  \_ -> Just (SetMenu false)
-            , HP.href $ routeHref List
-            ]
-            [ HH.text "Gallery" ]
-          ]
         , HH.div
-          [ HP.classes $ HH.ClassName <$> [ "navbar-end" ] ]
-          [ HH.div
-            [ HP.classes $ HH.ClassName <$> [ "navbar-item" ] ]
+            [ HP.classes $ HH.ClassName <$> [ "navbar-menu", if s.isMenuActive then "is-active" else "" ] ]
             [ HH.div
-              [ HP.classes $ HH.ClassName <$> [ "buttons" ] ]
-              []
+                [ HP.classes $ HH.ClassName <$> [ "navbar-start" ] ]
+                [ HH.a
+                    [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
+                    , HE.onClick \_ -> Just (SetMenu false)
+                    , HP.href $ routeHref Index
+                    ]
+                    [ HH.text "Generate" ]
+                , HH.a
+                    [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
+                    , HE.onClick \_ -> Just (SetMenu false)
+                    , HP.href $ routeHref List
+                    ]
+                    [ HH.text "Gallery" ]
+                ]
+            , HH.div
+                [ HP.classes $ HH.ClassName <$> [ "navbar-end" ] ]
+                [ HH.div
+                    [ HP.classes $ HH.ClassName <$> [ "navbar-item" ] ]
+                    [ HH.div
+                        [ HP.classes $ HH.ClassName <$> [ "buttons" ] ]
+                        []
+                    ]
+                ]
             ]
-          ]
         ]
-      ]
     ]
 
 handleAction :: forall o m. Action -> H.HalogenM State Action () o m Unit
