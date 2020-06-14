@@ -10,6 +10,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Mkpasswd.Data.States (FormData)
+import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
 import Web.HTML as Web
 import Web.HTML.Window as Win
@@ -49,17 +50,28 @@ component =
 initialState :: Input -> State
 initialState = { list: _, openMenuIndex: Nothing }
 
-render :: forall m. MonadEffect m => State -> H.ComponentHTML Action () m
+type ChildSlots
+  = ( headerNav :: Nav.Slot Unit )
+
+_headerNav = SProxy :: SProxy "headerNav"
+
+render :: forall m. MonadEffect m => State -> H.ComponentHTML Action ChildSlots m
 render state =
-  HH.div
-    [ HP.classes $ HH.ClassName <$> [ "container" ] ]
-    $ join
-        [ if null state.list then
-            emptyListView
-          else
-            mapWithIndex (accountRow state.openMenuIndex) state.list
-        , footerBtnArea
+  HH.main_
+    [ HH.slot _headerNav unit Nav.component unit absurd
+    , HH.section
+        [ HP.classes $ HH.ClassName <$> [ "section" ] ]
+        [ HH.div
+            [ HP.classes $ HH.ClassName <$> [ "container" ] ]
+            $ join
+                [ if null state.list then
+                    emptyListView
+                  else
+                    mapWithIndex (accountRow state.openMenuIndex) state.list
+                , footerBtnArea
+                ]
         ]
+    ]
 
 accountRow :: forall i. Maybe Int -> Int -> FormData -> HH.HTML i Action
 accountRow mi i fd =
@@ -174,7 +186,7 @@ footerBtnArea =
       ]
   ]
 
-handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action () DeleteTargetIdx m Unit
+handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action ChildSlots DeleteTargetIdx m Unit
 handleAction = case _ of
   Delete i -> do
     a <- H.liftEffect $ Web.window >>= Win.confirm "削除します。よろしいですか？"

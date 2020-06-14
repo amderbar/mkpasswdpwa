@@ -15,17 +15,51 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Mkpasswd.Data.States (FormData)
+import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
 import Routing.Hash (setHash)
 
 type Slot id
-  = F.Slot' Form NewFormData id
+  = forall q. H.Slot q NewFormData id
+
+type Slots
+  = ( headerNav :: Nav.Slot Unit
+    , formless :: F.Slot' Form FormData Unit
+    )
+
+_headerNav = SProxy :: SProxy "headerNav"
 
 type NewFormData
   = FormData
 
-component :: forall m. MonadAff m => H.Component HH.HTML (F.Query' Form) (Maybe FormData) NewFormData m
-component = F.component formInput spec
+data Action
+  = HandleFormless FormData
+
+component :: forall q m. MonadAff m => H.Component HH.HTML q (Maybe FormData) NewFormData m
+component =
+  H.mkComponent
+    { initialState
+    , render
+    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+    }
+  where
+  initialState :: Maybe FormData -> Maybe FormData
+  initialState = identity
+
+  render :: Maybe FormData -> H.ComponentHTML Action Slots m
+  render state =
+    HH.main_
+      [ HH.slot _headerNav unit Nav.component unit absurd
+      , HH.section
+          [ HP.classes $ HH.ClassName <$> [ "section" ] ]
+          [ HH.slot F._formless unit (F.component formInput spec) state (Just <<< HandleFormless) ]
+      ]
+
+  handleAction :: Action -> H.HalogenM (Maybe FormData) Action Slots NewFormData m Unit
+  handleAction = case _ of
+    HandleFormless fd -> do
+      H.liftEffect $ setHash $ routeHref List
+      H.raise fd
 
 -- Formless
 data ErrorCode
@@ -82,12 +116,7 @@ spec :: forall i m. Monad m => MonadAff m => F.Spec' Form FormData i m
 spec =
   F.defaultSpec
     { render = render
-    , handleEvent =
-      \ev -> do
-        case ev of
-          F.Submitted _ -> H.liftEffect $ setHash $ routeHref List
-          _ -> pure unit
-        F.raiseResult ev
+    , handleEvent = F.raiseResult
     }
   where
   _account = SProxy :: SProxy "account"
