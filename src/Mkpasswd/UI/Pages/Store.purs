@@ -14,40 +14,16 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Mkpasswd.Data.States (FormData, initialForm)
+import Mkpasswd.Data.States (FormData)
 import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
 import Routing.Hash (setHash)
 
-type Slot id = forall q. H.Slot q NewFormData id
-
-type Slots =
-  ( formless :: F.Slot' Form FormData Unit
-  )
+type Slot id = F.Slot' Form NewFormData id
 
 type NewFormData = FormData
 
-data Action
-    = Formless FormData
-
-component :: forall q m. MonadAff m => H.Component HH.HTML q (Maybe FormData) NewFormData m
-component =
-  H.mkComponent
-  { initialState
-  , render
-  , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
-  }
-  where
-  initialState :: Maybe FormData -> FormData
-  initialState = fromMaybe initialForm
-
-  render :: FormData -> H.ComponentHTML Action Slots m
-  render state = HH.slot F._formless unit (F.component formInput spec) state (Just <<< Formless)
-
-  handleAction :: Action -> H.HalogenM FormData Action Slots NewFormData m Unit
-  handleAction  = case _ of
-    Formless fd -> do
-      H.liftEffect $ setHash $ routeHref List
-      H.raise fd
+component :: forall m. MonadAff m => H.Component HH.HTML (F.Query' Form) (Maybe FormData) NewFormData m
+component = F.component formInput spec
 
 -- Formless
 
@@ -66,9 +42,9 @@ newtype Form r f = Form (r
   ))
 derive instance newtypeForm :: Newtype (Form r f) _
 
-formInput :: forall m. Monad m => FormData -> F.Input' Form m
+formInput :: forall m. Monad m => Maybe FormData -> F.Input' Form m
 formInput fd =
-  { initialInputs: Just (F.wrapInputFields fd)
+  { initialInputs: F.wrapInputFields <$> fd
   , validators: Form
     { account: isNonEmpty >>> isUnder100
     , passwd : isNonEmpty >>> isUnder100
@@ -91,8 +67,15 @@ derive instance genericFieldType :: Generic FieldType _
 instance showFieldType :: Show FieldType where
   show = genericShow
 
-spec :: forall i m. Monad m => F.Spec' Form FormData i m
-spec = F.defaultSpec { render = render, handleEvent = F.raiseResult }
+spec :: forall i m. Monad m => MonadAff m => F.Spec' Form FormData i m
+spec = F.defaultSpec
+  { render = render
+  , handleEvent = \ev -> do
+    case ev of
+      F.Submitted _ -> H.liftEffect $ setHash $ routeHref List
+      _ -> pure unit
+    F.raiseResult ev
+  }
   where
   _account = SProxy :: SProxy "account"
   _passwd = SProxy :: SProxy "passwd"
