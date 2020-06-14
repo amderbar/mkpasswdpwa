@@ -101,6 +101,7 @@ spec =
     OutOfRange -> "長過ぎます"
     ValueMissing -> "入力してください"
 
+  render :: forall st. F.PublicState Form st -> F.ComponentHTML' Form m
   render fstate =
     HH.div
       [ HP.classes $ HH.ClassName <$> [ "container" ] ]
@@ -143,6 +144,7 @@ spec =
           ]
       ]
 
+  labelBlock :: forall slot. FieldType -> String -> HH.HTML slot (F.Action' Form)
   labelBlock fieldType labelTxt =
     HH.label
       [ HP.for $ show fieldType
@@ -150,6 +152,12 @@ spec =
       ]
       [ HH.text labelTxt ]
 
+  inputTextForm ::
+    FieldType ->
+    Maybe (Array ErrorCode) ->
+    String ->
+    (String -> Maybe (F.Action' Form)) ->
+    F.ComponentHTML' Form m
   inputTextForm fieldType err inp onInput =
     HH.div
       [ HP.classes $ HH.ClassName <$> [ "control" ] ]
@@ -168,6 +176,12 @@ spec =
           ]
       ]
 
+  textAreaForm ::
+    FieldType ->
+    Maybe (Array ErrorCode) ->
+    String ->
+    (String -> Maybe (F.Action' Form)) ->
+    F.ComponentHTML' Form m
   textAreaForm fieldType err inp onInput =
     HH.div
       [ HP.classes $ HH.ClassName <$> [ "control" ] ]
@@ -185,6 +199,7 @@ spec =
           ]
       ]
 
+  errorDisplay :: forall slot. Maybe (Array ErrorCode) -> HH.HTML slot (F.Action' Form)
   errorDisplay err =
     HH.ul
       [ HP.classes $ HH.ClassName <$> [ "help", "is-danger" ] ]
