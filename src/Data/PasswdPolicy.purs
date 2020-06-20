@@ -1,22 +1,9 @@
 module Data.PasswdPolicy where
 
-type PasswdPolicy
-  = { length :: Int
-    , required ::
-        { degit :: Int
-        , lower :: Int
-        , upper :: Int
-        , symbol :: Int
-        }
-    }
+import Data.NonEmpty (NonEmpty)
+import Data.Tuple (Tuple)
 
-passwdPolicy :: Int -> Int -> Int -> Int -> Int -> PasswdPolicy
-passwdPolicy ln dg lw up sb =
-  { length: ln
-  , required:
-      { degit: dg
-      , lower: lw
-      , upper: up
-      , symbol: sb
-      }
-  }
+type PasswdPolicy m
+  = { length :: Int
+    , required :: NonEmpty Array (Tuple Int (m Char))
+    }

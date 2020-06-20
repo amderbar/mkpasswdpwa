@@ -18,17 +18,21 @@ import Halogen as H
 import Halogen.HTML as HH
 import Mkpasswd.Data.States (FormData, initialForm)
 import Mkpasswd.UI.Pages.List as ListPage
+import Mkpasswd.UI.Pages.Mkpasswd as IndexPage
 import Mkpasswd.UI.Pages.Store as StorePage
 import Mkpasswd.UI.Routing (RouteHash(..), routing)
 
 type Slots
   = ( listPage :: ListPage.Slot Unit
     , storePage :: StorePage.Slot Unit
+    , indexPage :: IndexPage.Slot Unit
     )
 
 _listPage = SProxy :: SProxy "listPage"
 
 _storePage = SProxy :: SProxy "storePage"
+
+_indexPage = SProxy :: SProxy "indexPage"
 
 type State
   = { route :: RouteHash
@@ -41,6 +45,7 @@ data Action
   = Load
   | Save FormData
   | Delete Int
+  | Mkpasswd (Maybe String)
 
 data Query a
   = ChangeHash RouteHash a
@@ -83,6 +88,8 @@ component =
       case ns of
         Right fd -> H.modify_ _ { storage = (fd :: Array FormData) }
         Left er -> H.modify_ _ { error = toList er }
+    Mkpasswd p -> do
+      H.modify_ _ { passwd = p }
     Save fd -> do
       s <- H.get
       let
