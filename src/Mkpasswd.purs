@@ -1,33 +1,30 @@
 module Mkpasswd where
 
-import Prelude                    (join, ($), (<$>), (<<<), (=<<))
-import Data.Char                  (fromCharCode)
-import Data.Maybe                 (Maybe)
-import Data.String.CodeUnits      (fromCharArray)
-import Data.Traversable           (sequence, traverse)
-import Data.Tuple                 (Tuple(..), uncurry)
-import Data.Unfoldable            (replicateA)
-import Effect                     (Effect)
+import Prelude (join, ($), (-), (<$>), max, pure, bind)
+import Data.Array ((:), head)
+import Data.Foldable (sum)
+import Data.Maybe (Maybe)
+import Data.NonEmpty (fromNonEmpty)
+import Data.PasswdPolicy (PasswdPolicy)
+import Data.String.CodeUnits (fromCharArray)
+import Data.Traversable (traverse)
+import Data.Tuple (Tuple(..), fst, snd, uncurry)
+import Effect (Effect)
+import Test.QuickCheck.Gen (Gen, oneOf, vectorOf, shuffle, randomSample')
 
-import Mkpasswd.Data.PasswdPolicy (PasswdPolicy, normalize)
-import Mkpasswd.Effect.Random     (choice, shuffle)
+mkpasswd :: PasswdPolicy Gen -> Effect (Maybe String)
+mkpasswd policy = head <$> randomSample' 1 (genPassword policy)
 
-mkpasswd :: Int -> Array PasswdPolicy -> Effect (Maybe String)
-mkpasswd len pol =
-    let policy = normalize len pol
-     in (fromCharCodeArray =<< _) <$> mkpasscode policy
-     where
-           fromCharCodeArray :: Array Int -> Maybe String
-           fromCharCodeArray a = fromCharArray <$> traverse fromCharCode a
+genPassword :: PasswdPolicy Gen -> Gen String
+genPassword { length, required } =
+  let
+    requiredLength = sum $ fst <$> required
 
-           multiChoice :: forall a. Int -> Array a -> Effect (Array (Maybe a))
-           multiChoice n arr = replicateA n $ choice arr
+    remain = max 0 (length - requiredLength)
 
-           mkpasscode :: Array PasswdPolicy -> Effect (Maybe (Array Int))
-           mkpasscode p =
-               (traverse shuffle)
-               =<< (sequence <<< join)
-               <$> traverse (uncurry multiChoice) (parsePolicy <$> p)
-
-           parsePolicy :: PasswdPolicy -> Tuple Int (Array Int)
-           parsePolicy p = Tuple p.requiredMinNum p.charSet
+    genAll = oneOf $ snd <$> required
+  in
+    do
+      charsets <- traverse (uncurry vectorOf) $ (Tuple remain genAll) : fromNonEmpty (:) required
+      passcode <- shuffle (join charsets)
+      pure (fromCharArray passcode)
