@@ -115,4 +115,5 @@ component =
     ChangeHash route a -> do
       mRoute <- H.gets _.route
       when (mRoute /= route) $ H.modify_ _ { route = route }
+      when (route == List) $ H.modify_ (_ { passwd = Nothing })
       pure (Just a)
