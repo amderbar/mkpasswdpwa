@@ -1,19 +1,15 @@
 module Mkpasswd.UI.Pages.Mkpasswd where
 
 import Prelude
-import Control.Monad.Gen (class MonadGen)
-import Control.Monad.Rec.Class (class MonadRec)
 import Data.Array (catMaybes, uncons)
 import Data.Char.Gen (genDigitChar, genAlphaLowercase, genAlphaUppercase)
-import Data.Char.Gen.Symbols (genSymbolChar)
-import Data.Const (Const)
 import Data.Either (Either(..), note)
 import Data.Foldable (or, sum)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Int (toNumber, fromString)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
-import Data.NonEmpty ((:|))
+import Data.NonEmpty (NonEmpty, (:|))
 import Data.Newtype (class Newtype)
 import Data.Symbol (SProxy(..))
 import Data.Switch (toSwitch)
@@ -29,14 +25,16 @@ import Halogen.HTML.Properties as HP
 import Mkpasswd (mkpasswd)
 import Data.PasswdPolicy (PasswdPolicy)
 import Mkpasswd.UI.Components.HeaderNav as Nav
+import Mkpasswd.UI.Components.MultiChkboxes as MultiChkboxes
 import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
+import Test.QuickCheck.Gen (Gen, elements)
 
 type Slot id
   = forall q. H.Slot q (Maybe String) id
 
 type ChildSlots
   = ( headerNav :: Nav.Slot Unit
-    , formless :: F.Slot' Form GenPasswdConfig Unit
+    , formless :: FormSlot Unit
     )
 
 _headerNav = SProxy :: SProxy "headerNav"
@@ -158,10 +156,10 @@ component =
     Clear -> do
       H.modify_ _ { passwd = Nothing }
     Generate -> do
-      mRes <- H.query F._formless unit $ H.request F.submitReply
-      case toPaswdPolicy =<< (map F.unwrapOutputFields <<< join) mRes of
-        Just res -> do
-          newPasswd <- H.liftEffect $ mkpasswd res
+      mRes <- H.query F._formless unit $ F.injQuery (H.request GetPasswdPolicy)
+      case mRes of
+        Just policy -> do
+          newPasswd <- H.liftEffect $ mkpasswd policy
           H.modify_ _ { passwd = newPasswd }
         Nothing -> pure unit
     Save -> do
@@ -179,21 +177,7 @@ type GenPasswdConfig
     , isUseUpper :: Boolean
     , numSymbol :: Int
     , isUseSymbol :: Boolean
-    -- , symbolChars :: Array (Switch Char)
     }
-
-toPaswdPolicy :: forall m. MonadRec m => MonadGen m => GenPasswdConfig -> Maybe (PasswdPolicy m)
-toPaswdPolicy conf =
-  let
-    seed =
-      (uncons <<< catMaybes) $ Switch.toMaybe
-        <$> [ toSwitch conf.isUseDigit (Tuple conf.numDigit genDigitChar)
-          , toSwitch conf.isUseUpper (Tuple conf.numUpper genAlphaUppercase)
-          , toSwitch conf.isUseLower (Tuple conf.numLower genAlphaLowercase)
-          , toSwitch conf.isUseSymbol (Tuple conf.numSymbol genSymbolChar)
-          ]
-  in
-    { length: conf.length, required: _ } <<< (\{ head, tail } -> head :| tail) <$> seed
 
 newtype Form r f
   = Form
@@ -208,7 +192,6 @@ newtype Form r f
       , isUseUpper :: f (Array ErrorCode) Boolean Boolean
       , numSymbol :: f (Array ErrorCode) String Int
       , isUseSymbol :: f (Array ErrorCode) Boolean Boolean
-      -- , symbolChars :: f (Array ErrorCode) String Array (Switch Char)
       )
   )
 
@@ -267,7 +250,6 @@ formInput =
             , isUseLower: true
             , numSymbol: "1"
             , isUseSymbol: true
-            -- , symbolChars: toSwitch true <$> symbols
             }
   , validators:
       Form
@@ -293,22 +275,25 @@ formInput =
 
   atLeastOneTrue =
     F.hoistFnE \form _ ->
-      chk EmptyCharSet identity $ or
-        [ F.getInput _isUseDigit form
-        , F.getInput _isUseUpper form
-        , F.getInput _isUseLower form
-        , F.getInput _isUseSymbol form
-        ]
+      chk EmptyCharSet identity
+        $ or
+            [ F.getInput _isUseDigit form
+            , F.getInput _isUseUpper form
+            , F.getInput _isUseLower form
+            , F.getInput _isUseSymbol form
+            ]
 
   enoughLong =
     F.hoistFnE \form len ->
       let
-        requiredLength = sum $ catMaybes
-          [ F.getOutput _numDigit form
-          , F.getOutput _numUpper form
-          , F.getOutput _numLower form
-          , F.getOutput _numSymbol form
-          ]
+        requiredLength =
+          sum
+            $ catMaybes
+                [ F.getOutput _numDigit form
+                , F.getOutput _numUpper form
+                , F.getOutput _numLower form
+                , F.getOutput _numSymbol form
+                ]
       in
         chk TooShort (_ >= requiredLength) len
 
@@ -327,18 +312,72 @@ instance showFieldType :: Show FieldType where
 data PasswdConfigAction
   = ToggleCharSetUse FieldType Boolean
 
-type FormAction = F.Action Form PasswdConfigAction
+data PasswdConfigQuery a
+  = GetPasswdPolicy (PasswdPolicy Gen -> a)
 
-spec :: forall i m. MonadAff m => F.Spec Form () (Const Void) PasswdConfigAction () i GenPasswdConfig m
+derive instance functorPasswdConfigQuery :: Functor PasswdConfigQuery
+
+type FormAction
+  = F.Action Form PasswdConfigAction
+
+type FormSlot
+  = F.Slot Form PasswdConfigQuery GrandchildSlots GenPasswdConfig
+
+type GrandchildSlots
+  = ( multichkboxes :: MultiChkboxes.Slot Unit )
+
+_multichkboxes = SProxy :: SProxy "multichkboxes"
+
+spec :: forall i m. MonadAff m => F.Spec Form () PasswdConfigQuery PasswdConfigAction GrandchildSlots i GenPasswdConfig m
 spec =
   F.defaultSpec
     { render = render
     , handleAction = handleAction
+    , handleQuery = handleQuery
     , handleEvent = F.raiseResult
     }
   where
   eval act = F.handleAction handleAction F.raiseResult act
 
+  handleQuery :: forall a. PasswdConfigQuery a -> F.HalogenM Form () PasswdConfigAction GrandchildSlots GenPasswdConfig m (Maybe a)
+  handleQuery = case _ of
+    GetPasswdPolicy reply -> do
+      eval F.validateAll
+      form <- H.gets _.form
+      let
+        conf =
+          { length: _, isNonEmpty: _, numDigit: _, isUseDigit: _, numLower: _, isUseLower: _, numUpper: _, isUseUpper: _, numSymbol: _, isUseSymbol: _ }
+            <$> (F.getOutput _length form)
+            <*> (F.getOutput _isNonEmpty form)
+            <*> (F.getOutput _numDigit form)
+            <*> (F.getOutput _isUseDigit form)
+            <*> (F.getOutput _numUpper form)
+            <*> (F.getOutput _isUseUpper form)
+            <*> (F.getOutput _numLower form)
+            <*> (F.getOutput _isUseLower form)
+            <*> (F.getOutput _numSymbol form)
+            <*> (F.getOutput _isUseSymbol form)
+      mCharSet <- H.query _multichkboxes unit $ H.request F.submitReply
+      let
+        mAllowedSymbols = (_.allowedSymbols <<< F.unwrapOutputFields) <$> (join mCharSet)
+      let
+        policy = join $ toPaswdPolicy <$> conf <*> mAllowedSymbols
+      pure $ reply <$> policy
+
+  toPaswdPolicy :: GenPasswdConfig -> NonEmpty Array Char -> Maybe (PasswdPolicy Gen)
+  toPaswdPolicy conf allowedSymbols =
+    let
+      seed =
+        (uncons <<< catMaybes) $ Switch.toMaybe
+          <$> [ toSwitch conf.isUseDigit (Tuple conf.numDigit genDigitChar)
+            , toSwitch conf.isUseUpper (Tuple conf.numUpper genAlphaUppercase)
+            , toSwitch conf.isUseLower (Tuple conf.numLower genAlphaLowercase)
+            , toSwitch conf.isUseSymbol (Tuple conf.numSymbol $ elements allowedSymbols)
+            ]
+    in
+      { length: conf.length, required: _ } <<< (\{ head, tail } -> head :| tail) <$> seed
+
+  handleAction :: PasswdConfigAction -> F.HalogenM Form () PasswdConfigAction GrandchildSlots GenPasswdConfig m Unit
   handleAction = case _ of
     ToggleCharSetUse PasswdLength _ -> pure unit
     ToggleCharSetUse DigitCharNum flg -> do
@@ -362,7 +401,7 @@ spec =
     EmptyCharSet -> "使用する文字を指定してください"
     TooShort -> "長さは文字種ごとの必要最低数の総和よりも大きくしてください"
 
-  render :: forall st. F.PublicState Form st -> F.ComponentHTML Form PasswdConfigAction () m
+  render :: forall st. F.PublicState Form st -> F.ComponentHTML Form PasswdConfigAction GrandchildSlots m
   render fstate =
     HH.div
       [ HP.classes $ HH.ClassName <$> [ "container" ] ]
@@ -404,6 +443,7 @@ spec =
           (Just <<< F.injAction <<< ToggleCharSetUse SymbolCharNum)
           (Just <<< F.setValidate _numSymbol)
       , errorDisplay (F.getError _isNonEmpty fstate.form)
+      , HH.slot _multichkboxes unit MultiChkboxes.component (not $ F.getInput _isUseSymbol fstate.form) (const Nothing)
       ]
 
   inputFormGroup ::
