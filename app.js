@@ -17278,14 +17278,14 @@ var PS = {};
                   }))(newtypeForm)()(_numDigit)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
                       return "isUseDigit";
                   }))(newtypeForm)()(_isUseDigit)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
-                      return "numUpper";
-                  }))(newtypeForm)()(_numUpper)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
-                      return "isUseUpper";
-                  }))(newtypeForm)()(_isUseUpper)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
                       return "numLower";
                   }))(newtypeForm)()(_numLower)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
                       return "isUseLower";
                   }))(newtypeForm)()(_isUseLower)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
+                      return "numUpper";
+                  }))(newtypeForm)()(_numUpper)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
+                      return "isUseUpper";
+                  }))(newtypeForm)()(_isUseUpper)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
                       return "numSymbol";
                   }))(newtypeForm)()(_numSymbol)(form)))(Formless_Retrieve.getOutput(new Data_Symbol.IsSymbol(function () {
                       return "isUseSymbol";
