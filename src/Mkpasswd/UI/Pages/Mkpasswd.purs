@@ -351,10 +351,10 @@ spec =
             <*> (F.getOutput _isNonEmpty form)
             <*> (F.getOutput _numDigit form)
             <*> (F.getOutput _isUseDigit form)
-            <*> (F.getOutput _numUpper form)
-            <*> (F.getOutput _isUseUpper form)
             <*> (F.getOutput _numLower form)
             <*> (F.getOutput _isUseLower form)
+            <*> (F.getOutput _numUpper form)
+            <*> (F.getOutput _isUseUpper form)
             <*> (F.getOutput _numSymbol form)
             <*> (F.getOutput _isUseSymbol form)
       mCharSet <- H.query _multichkboxes unit $ H.request F.submitReply
