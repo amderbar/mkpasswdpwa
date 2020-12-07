@@ -14,7 +14,7 @@
   "devDependencies": {
     "live-server": "^1.2.1",
     "purescript": "^0.13.3",
-    "purty": "^6.2.0",
+    "purty": "^6.3.0",
     "spago": "^0.15.3"
   }
 }
