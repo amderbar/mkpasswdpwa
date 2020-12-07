@@ -119,23 +119,10 @@ let additions =
 
 
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20200615/packages.dhall sha256:5d0cfad9408c84db0a3fdcea2d708f9ed8f64297e164dc57a7cf6328706df93a
+      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20201206/packages.dhall sha256:c9ffd7577fb8ee2197309591d7ccc0f506ee37b9078866f0ef159f5abbb1b32b
 
 let overrides = {=}
 
-let additions =
-      { formless =
-        { dependencies =
-          [ "halogen"
-          , "variant"
-          , "heterogeneous"
-          , "generics-rep"
-          , "profunctor-lenses"
-          ]
-        , repo =
-            "https://github.com/thomashoneyman/purescript-halogen-formless.git"
-        , version = "master"
-        }
-      }
+let additions = {=}
 
 in  upstream // overrides // additions
