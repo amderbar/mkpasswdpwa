@@ -13,8 +13,8 @@
   "license": "MIT",
   "devDependencies": {
     "live-server": "^1.2.1",
-    "purescript": "^0.13.3",
-    "purty": "^6.3.0",
-    "spago": "^0.15.3"
+    "purescript": "^0.14.0",
+    "purty": "^7.0.0",
+    "spago": "^0.19.2"
   }
 }
