@@ -2,7 +2,6 @@ module Mkpasswd.UI.Components.HeaderNav where
 
 import Prelude
 import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
-import Data.Maybe (Maybe(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -18,7 +17,7 @@ type State
 data Action
   = SetMenu Boolean
 
-component :: forall q i o m. H.Component HH.HTML q i o m
+component :: forall q i o m. H.Component q i o m
 component =
   H.mkComponent
     { initialState
@@ -52,7 +51,7 @@ render s =
                 , HP.attr (HH.AttrName "role") "button"
                 , HP.attr (HH.AttrName "aria-label") "menu"
                 , HP.attr (HH.AttrName "aria-expanded") "button"
-                , HE.onClick \_ -> Just (SetMenu $ not s.isMenuActive)
+                , HE.onClick \_ -> SetMenu $ not s.isMenuActive
                 ]
                 [ HH.span [ HP.attr (HH.AttrName "aria-hidden") "true" ] []
                 , HH.span [ HP.attr (HH.AttrName "aria-hidden") "true" ] []
@@ -65,13 +64,13 @@ render s =
                 [ HP.classes $ HH.ClassName <$> [ "navbar-start" ] ]
                 [ HH.a
                     [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
-                    , HE.onClick \_ -> Just (SetMenu false)
+                    , HE.onClick \_ -> SetMenu false
                     , HP.href $ routeHref Index
                     ]
                     [ HH.text "Generate" ]
                 , HH.a
                     [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
-                    , HE.onClick \_ -> Just (SetMenu false)
+                    , HE.onClick \_ -> SetMenu false
                     , HP.href $ routeHref List
                     ]
                     [ HH.text "Gallery" ]

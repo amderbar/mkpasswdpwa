@@ -3,12 +3,12 @@ module Test.Main where
 import Prelude
 import Control.Monad.Gen (class MonadGen)
 import Control.Monad.Rec.Class (class MonadRec)
-import Data.Array ((..), catMaybes, uncons)
+import Data.Array ((..), catMaybes)
+import Data.Array.NonEmpty (fromArray)
 import Data.Char.Gen (genDigitChar, genAlphaLowercase, genAlphaUppercase)
 import Data.Char.Gen.Symbols (genSymbolChar)
 import Data.Foldable (for_)
 import Data.Maybe (fromMaybe, Maybe(..))
-import Data.NonEmpty ((:|))
 import Data.PasswdPolicy (PasswdPolicy)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -32,4 +32,4 @@ main = do
           Nothing -> pure Nothing
   where
   mkPolicy :: forall m. MonadRec m => MonadGen m => Int -> Array (Maybe (Tuple Int (m Char))) -> Maybe (PasswdPolicy m)
-  mkPolicy len conf = { length: len, required: _ } <<< (\{ head, tail } -> head :| tail) <$> uncons (catMaybes conf)
+  mkPolicy len conf = { length: len, required: _ } <$> (fromArray <<< catMaybes) conf

@@ -1,9 +1,9 @@
 module Data.PasswdPolicy where
 
-import Data.NonEmpty (NonEmpty)
+import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Tuple (Tuple)
 
 type PasswdPolicy m
   = { length :: Int
-    , required :: NonEmpty Array (Tuple Int (m Char))
+    , required :: NonEmptyArray (Tuple Int (m Char))
     }

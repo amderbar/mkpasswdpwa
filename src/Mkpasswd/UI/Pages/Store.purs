@@ -3,11 +3,11 @@ module Mkpasswd.UI.Pages.Store where
 import Prelude
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Newtype (class Newtype)
 import Data.String as Str
-import Data.Symbol (SProxy(..))
+import Type.Proxy (Proxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
@@ -27,7 +27,7 @@ type Slots
     , formless :: F.Slot' Form FormData Unit
     )
 
-_headerNav = SProxy :: SProxy "headerNav"
+_headerNav = Proxy :: Proxy "headerNav"
 
 type NewFormData
   = FormData
@@ -35,7 +35,7 @@ type NewFormData
 data Action
   = HandleFormless FormData
 
-component :: forall q m. MonadAff m => H.Component HH.HTML q (Maybe FormData) NewFormData m
+component :: forall q m. MonadAff m => H.Component q (Maybe FormData) NewFormData m
 component =
   H.mkComponent
     { initialState
@@ -52,7 +52,7 @@ component =
       [ HH.slot _headerNav unit Nav.component unit absurd
       , HH.section
           [ HP.classes $ HH.ClassName <$> [ "section" ] ]
-          [ HH.slot F._formless unit (F.component formInput spec) state (Just <<< HandleFormless) ]
+          [ HH.slot F._formless unit (F.component formInput spec) state HandleFormless ]
       ]
 
   handleAction :: Action -> H.HalogenM (Maybe FormData) Action Slots NewFormData m Unit
@@ -71,7 +71,7 @@ derive instance genericErrorReason :: Generic ErrorCode _
 instance showErrorReason :: Show ErrorCode where
   show = genericShow
 
-newtype Form r f
+newtype Form (r :: Row Type -> Type) f
   = Form
   ( r
       ( account :: f (Array ErrorCode) String String
@@ -119,11 +119,11 @@ spec =
     , handleEvent = F.raiseResult
     }
   where
-  _account = SProxy :: SProxy "account"
+  _account = Proxy :: Proxy "account"
 
-  _passwd = SProxy :: SProxy "passwd"
+  _passwd = Proxy :: Proxy "passwd"
 
-  _note = SProxy :: SProxy "note"
+  _note = Proxy :: Proxy "note"
 
   errorMsg :: ErrorCode -> String
   errorMsg = case _ of
@@ -137,19 +137,19 @@ spec =
       [ HH.div
           [ HP.classes $ HH.ClassName <$> [ "field" ] ]
           [ labelBlock AccountInput "Title"
-          , inputTextForm AccountInput (F.getError _account fstate.form) (F.getInput _account fstate.form) (Just <<< F.setValidate _account)
+          , inputTextForm AccountInput (F.getError _account fstate.form) (F.getInput _account fstate.form) (F.setValidate _account)
           , errorDisplay (F.getError _account fstate.form)
           ]
       , HH.div
           [ HP.classes $ HH.ClassName <$> [ "field" ] ]
           [ labelBlock Passwdinput "The Work"
-          , inputTextForm Passwdinput (F.getError _passwd fstate.form) (F.getInput _passwd fstate.form) (Just <<< F.setValidate _passwd)
+          , inputTextForm Passwdinput (F.getError _passwd fstate.form) (F.getInput _passwd fstate.form) (F.setValidate _passwd)
           , errorDisplay (F.getError _passwd fstate.form)
           ]
       , HH.div
           [ HP.classes $ HH.ClassName <$> [ "field" ] ]
           [ labelBlock NoteTextarea "Description"
-          , textAreaForm NoteTextarea (F.getError _note fstate.form) (F.getInput _note fstate.form) (Just <<< F.setValidate _note)
+          , textAreaForm NoteTextarea (F.getError _note fstate.form) (F.getInput _note fstate.form) (F.setValidate _note)
           , errorDisplay (F.getError _note fstate.form)
           ]
       , HH.div
@@ -158,7 +158,7 @@ spec =
               [ HP.classes $ HH.ClassName <$> [ "control" ] ]
               [ HH.button
                   [ HP.classes $ HH.ClassName <$> [ "button", "is-dark" ]
-                  , HE.onClick \_ -> Just F.submit
+                  , HE.onClick \_ -> F.submit
                   ]
                   [ HH.text "Save" ]
               ]
@@ -185,7 +185,7 @@ spec =
     FieldType ->
     Maybe (Array ErrorCode) ->
     String ->
-    (String -> Maybe (F.Action' Form)) ->
+    (String -> F.Action' Form) ->
     F.ComponentHTML' Form m
   inputTextForm fieldType err inp onInput =
     HH.div
@@ -209,7 +209,7 @@ spec =
     FieldType ->
     Maybe (Array ErrorCode) ->
     String ->
-    (String -> Maybe (F.Action' Form)) ->
+    (String -> F.Action' Form) ->
     F.ComponentHTML' Form m
   textAreaForm fieldType err inp onInput =
     HH.div

@@ -1,15 +1,15 @@
 module Mkpasswd.UI.Components.MultiChkboxes where
 
 import Prelude
-import Data.Array ((:), mapWithIndex, modifyAt, catMaybes, uncons)
+import Data.Array ((:), mapWithIndex, modifyAt, catMaybes)
+import Data.Array.NonEmpty (NonEmptyArray, fromArray)
 import Data.Char.Gen.Symbols (symbols)
 import Data.Const (Const)
 import Data.Either (note)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (class Newtype)
-import Data.NonEmpty (NonEmpty, (:|))
 import Data.String.CodeUnits (singleton)
 import Data.Switch (Switch, toSwitch)
 import Data.Switch as Switch
@@ -19,6 +19,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Type.Proxy (Proxy(..))
 import Web.Event.Event (Event)
 
 type Slot
@@ -31,16 +32,15 @@ type State
     )
 
 type AllowedSymbols
-  = { allowedSymbols :: NonEmpty Array Char }
+  = { allowedSymbols :: NonEmptyArray Char }
 
-newtype Form r f
+newtype Form (r :: Row Type -> Type) f
   = Form
   ( r
-      ( allowedSymbols :: f (Array ErrorCode) (Array (Switch Char)) (NonEmpty Array Char) )
+      ( allowedSymbols :: f (Array ErrorCode) (Array (Switch Char)) (NonEmptyArray Char) )
   )
 
-proxy :: F.SProxies Form
-proxy = F.mkSProxies (F.FormProxy :: _ Form)
+_allowedSymbols = Proxy :: Proxy "allowedSymbols"
 
 derive instance newtypeForm :: Newtype (Form r f) _
 
@@ -87,9 +87,9 @@ formInput disabled =
   transformAllowedSymbols =
     F.hoistFnE_ \arr ->
       let
-        seed = (uncons <<< catMaybes) $ Switch.toMaybe <$> arr
+        seed = (fromArray <<< catMaybes) $ Switch.toMaybe <$> arr
       in
-        note [ EmptyCharSet ] $ (\{ head, tail } -> head :| tail) <$> seed
+        note [ EmptyCharSet ] seed
 
 handleAction :: forall m. MonadAff m => Action -> F.HalogenM Form State Action () AllowedSymbols m Unit
 handleAction = case _ of
@@ -103,13 +103,13 @@ handleAction = case _ of
     H.modify_ _ { allChk = allChk }
     form <- H.gets _.form
     let
-      allowedSymbols = (if allChk then Switch.on else Switch.off) <$> F.getInput proxy.allowedSymbols form
-    F.handleAction handleAction F.raiseResult $ F.setValidate proxy.allowedSymbols allowedSymbols
+      allowedSymbols = (if allChk then Switch.on else Switch.off) <$> F.getInput _allowedSymbols form
+    F.handleAction handleAction F.raiseResult $ F.setValidate _allowedSymbols allowedSymbols
   ToggleCharSwtich idx -> do
     form <- H.gets _.form
     let
-      allowedSymbols = (\i f a -> fromMaybe a $ modifyAt i f a) idx Switch.toggle $ F.getInput proxy.allowedSymbols form
-    F.handleAction handleAction F.raiseResult $ F.setValidate proxy.allowedSymbols allowedSymbols
+      allowedSymbols = (\i f a -> fromMaybe a $ modifyAt i f a) idx Switch.toggle $ F.getInput _allowedSymbols form
+    F.handleAction handleAction F.raiseResult $ F.setValidate _allowedSymbols allowedSymbols
 
 render :: forall m. MonadAff m => F.PublicState Form State -> F.ComponentHTML Form Action () m
 render fstate =
@@ -117,7 +117,7 @@ render fstate =
     [ HP.classes $ HH.ClassName <$> [ "card" ] ]
     [ HH.header
         [ HP.classes $ HH.ClassName <$> [ "card-header" ]
-        , HE.onClick \_ -> Just (F.injAction ToggleOpen)
+        , HE.onClick \_ -> F.injAction ToggleOpen
         ]
         [ HH.p
             [ HP.classes $ HH.ClassName <$> [ "card-header-title" ] ]
@@ -136,7 +136,7 @@ render fstate =
                 ]
             ]
         ]
-    , case (F.getError proxy.allowedSymbols fstate.form) of
+    , case (F.getError _allowedSymbols fstate.form) of
         Just err ->
           HH.div
             [ HP.classes $ HH.ClassName <$> [ "card-content" ] ]
@@ -148,18 +148,18 @@ render fstate =
           [ HP.classes $ HH.ClassName <$> [ "card-content" ]
           , HP.disabled fstate.disabled
           ]
-          $ checkboxRow fstate.disabled fstate.allChk (\_ -> Just $ F.injAction ToggleAllChk) (HH.text "use all symbol")
+          $ checkboxRow fstate.disabled fstate.allChk (\_ -> F.injAction ToggleAllChk) (HH.text "use all symbol")
           : HH.hr_
-          : flip mapWithIndex (F.getInput proxy.allowedSymbols fstate.form)
+          : flip mapWithIndex (F.getInput _allowedSymbols fstate.form)
               ( \i c ->
-                  checkboxRow fstate.disabled (Switch.isOn c) (\_ -> Just $ F.injAction $ ToggleCharSwtich i)
+                  checkboxRow fstate.disabled (Switch.isOn c) (\_ -> F.injAction $ ToggleCharSwtich i)
                     $ HH.strong_ [ HH.text $ singleton (Switch.label c) ]
               )
       else
         HH.text ""
     ]
   where
-  checkboxRow :: forall slot. Boolean -> Boolean -> (Event -> Maybe FormAction) -> HH.HTML slot FormAction -> HH.HTML slot FormAction
+  checkboxRow :: forall slot. Boolean -> Boolean -> (Event -> FormAction) -> HH.HTML slot FormAction -> HH.HTML slot FormAction
   checkboxRow isDisabled isChked onChange textElem =
     HH.div
       [ HP.classes $ HH.ClassName <$> [ "field" ] ]

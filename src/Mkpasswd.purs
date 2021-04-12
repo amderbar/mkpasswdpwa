@@ -2,9 +2,9 @@ module Mkpasswd where
 
 import Prelude (join, ($), (-), (<$>), max, pure, bind)
 import Data.Array ((:), head)
+import Data.Array.NonEmpty (toArray)
 import Data.Foldable (sum)
 import Data.Maybe (Maybe)
-import Data.NonEmpty (fromNonEmpty)
 import Data.PasswdPolicy (PasswdPolicy)
 import Data.String.CodeUnits (fromCharArray)
 import Data.Traversable (traverse)
@@ -25,6 +25,6 @@ genPassword { length, required } =
     genAll = oneOf $ snd <$> required
   in
     do
-      charsets <- traverse (uncurry vectorOf) $ (Tuple remain genAll) : fromNonEmpty (:) required
+      charsets <- traverse (uncurry vectorOf) $ (Tuple remain genAll) : toArray required
       passcode <- shuffle (join charsets)
       pure (fromCharArray passcode)

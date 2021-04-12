@@ -3,7 +3,7 @@ module Mkpasswd.UI.Routing where
 import Prelude
 import Data.Foldable (oneOf)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(Just))
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
@@ -50,4 +50,4 @@ routing :: forall m a. (m Unit -> Aff a) -> (RouteHash -> Unit -> m Unit) -> Aff
 routing query hashAction =
   liftEffect
     $ matches menuHash \mOld new ->
-        when (mOld /= Just new) $ launchAff_ $ query $ H.tell (hashAction new)
+        when (mOld /= Just new) $ launchAff_ $ query $ H.mkTell (hashAction new)

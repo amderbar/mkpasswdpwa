@@ -1,17 +1,17 @@
 module Mkpasswd.UI.Pages.Mkpasswd where
 
 import Prelude
-import Data.Array (catMaybes, uncons)
+import Data.Array (catMaybes)
+import Data.Array.NonEmpty (NonEmptyArray, fromArray)
 import Data.Char.Gen (genDigitChar, genAlphaLowercase, genAlphaUppercase)
 import Data.Either (Either(..), note)
 import Data.Foldable (or, sum)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Int (toNumber, fromString)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
-import Data.NonEmpty (NonEmpty, (:|))
 import Data.Newtype (class Newtype)
-import Data.Symbol (SProxy(..))
+import Type.Proxy (Proxy(..))
 import Data.Switch (toSwitch)
 import Data.Switch as Switch
 import Data.Tuple (Tuple(..))
@@ -37,7 +37,7 @@ type ChildSlots
     , formless :: FormSlot Unit
     )
 
-_headerNav = SProxy :: SProxy "headerNav"
+_headerNav = Proxy :: Proxy "headerNav"
 
 type State
   = { passwd :: Maybe String
@@ -49,7 +49,7 @@ data Action
   | Clear
   | Save
 
-component :: forall q i m. MonadAff m => H.Component HH.HTML q i (Maybe String) m
+component :: forall q i m. MonadAff m => H.Component q i (Maybe String) m
 component =
   H.mkComponent
     { initialState
@@ -67,14 +67,14 @@ component =
       , errMsg: []
       }
 
-  render :: State -> H.ComponentHTML Action ChildSlots m
+  -- render :: State -> H.ComponentHTML Action ChildSlots m
   render state =
     HH.main
       [ HP.classes $ HH.ClassName <$> [ if isJust state.passwd then "is-clipped" else "" ] ]
       [ HH.slot _headerNav unit Nav.component unit absurd
       , HH.section
           [ HP.classes $ HH.ClassName <$> [ "section" ] ]
-          [ HH.slot F._formless unit (F.component (const formInput) spec) unit (const Nothing) ]
+          [ HH.slot_ F._formless unit (F.component (const formInput) spec) unit ]
       , footerBtnArea
       , resultModal state.passwd
       ]
@@ -91,7 +91,7 @@ component =
                   [ HP.classes $ HH.ClassName <$> [ "control" ] ]
                   [ HH.button
                       [ HP.classes $ HH.ClassName <$> [ "button", "is-dark" ]
-                      , HE.onClick \_ -> Just Generate
+                      , HE.onClick \_ -> Generate
                       ]
                       [ HH.text "Generate" ]
                   ]
@@ -105,7 +105,7 @@ component =
       [ HP.classes $ HH.ClassName <$> [ "modal", if isJust mPasswd then "is-active" else "" ] ]
       [ HH.div
           [ HP.classes $ HH.ClassName <$> [ "modal-background" ]
-          , HE.onClick \_ -> Just Clear
+          , HE.onClick \_ -> Clear
           ]
           []
       , HH.div
@@ -118,7 +118,7 @@ component =
               , HH.button
                   [ HP.classes $ HH.ClassName <$> [ "delete" ]
                   , HP.attr (HH.AttrName "aria-label") "close"
-                  , HE.onClick \_ -> Just Clear
+                  , HE.onClick \_ -> Clear
                   ]
                   []
               ]
@@ -138,13 +138,13 @@ component =
               [ HP.classes $ HH.ClassName <$> [ "modal-card-foot" ] ]
               [ HH.a
                   [ HP.classes $ HH.ClassName <$> [ "button", "is-dark" ]
-                  , HE.onClick \_ -> Just Save
+                  , HE.onClick \_ -> Save
                   , HP.href $ routeHref New
                   ]
                   [ HH.text "Save" ]
               , HH.button
                   [ HP.classes $ HH.ClassName <$> [ "button" ]
-                  , HE.onClick \_ -> Just Generate
+                  , HE.onClick \_ -> Generate
                   ]
                   [ HH.text "Regenerate" ]
               ]
@@ -156,7 +156,7 @@ component =
     Clear -> do
       H.modify_ _ { passwd = Nothing }
     Generate -> do
-      mRes <- H.query F._formless unit $ F.injQuery (H.request GetPasswdPolicy)
+      mRes <- H.request F._formless unit (F.injQuery <<< GetPasswdPolicy)
       case mRes of
         Just policy -> do
           newPasswd <- H.liftEffect $ mkpasswd policy
@@ -179,7 +179,7 @@ type GenPasswdConfig
     , isUseSymbol :: Boolean
     }
 
-newtype Form r f
+newtype Form (r :: Row Type -> Type) f
   = Form
   ( r
       ( length :: f (Array ErrorCode) String Int
@@ -197,25 +197,25 @@ newtype Form r f
 
 derive instance newtypeForm :: Newtype (Form r f) _
 
-_length = SProxy :: SProxy "length"
+_length = Proxy :: Proxy "length"
 
-_isNonEmpty = SProxy :: SProxy "isNonEmpty"
+_isNonEmpty = Proxy :: Proxy "isNonEmpty"
 
-_numDigit = SProxy :: SProxy "numDigit"
+_numDigit = Proxy :: Proxy "numDigit"
 
-_isUseDigit = SProxy :: SProxy "isUseDigit"
+_isUseDigit = Proxy :: Proxy "isUseDigit"
 
-_numUpper = SProxy :: SProxy "numUpper"
+_numUpper = Proxy :: Proxy "numUpper"
 
-_isUseUpper = SProxy :: SProxy "isUseUpper"
+_isUseUpper = Proxy :: Proxy "isUseUpper"
 
-_numLower = SProxy :: SProxy "numLower"
+_numLower = Proxy :: Proxy "numLower"
 
-_isUseLower = SProxy :: SProxy "isUseLower"
+_isUseLower = Proxy :: Proxy "isUseLower"
 
-_numSymbol = SProxy :: SProxy "numSymbol"
+_numSymbol = Proxy :: Proxy "numSymbol"
 
-_isUseSymbol = SProxy :: SProxy "isUseSymbol"
+_isUseSymbol = Proxy :: Proxy "isUseSymbol"
 
 data ErrorCode
   = OutOfRange
@@ -326,7 +326,7 @@ type FormSlot
 type GrandchildSlots
   = ( multichkboxes :: MultiChkboxes.Slot Unit )
 
-_multichkboxes = SProxy :: SProxy "multichkboxes"
+_multichkboxes = Proxy :: Proxy "multichkboxes"
 
 spec :: forall i m. MonadAff m => F.Spec Form () PasswdConfigQuery PasswdConfigAction GrandchildSlots i GenPasswdConfig m
 spec =
@@ -357,25 +357,25 @@ spec =
             <*> (F.getOutput _isUseUpper form)
             <*> (F.getOutput _numSymbol form)
             <*> (F.getOutput _isUseSymbol form)
-      mCharSet <- H.query _multichkboxes unit $ H.request F.submitReply
+      mCharSet <- H.request _multichkboxes unit F.submitReply
       let
         mAllowedSymbols = (_.allowedSymbols <<< F.unwrapOutputFields) <$> (join mCharSet)
       let
         policy = join $ toPaswdPolicy <$> conf <*> mAllowedSymbols
       pure $ reply <$> policy
 
-  toPaswdPolicy :: GenPasswdConfig -> NonEmpty Array Char -> Maybe (PasswdPolicy Gen)
+  toPaswdPolicy :: GenPasswdConfig -> NonEmptyArray Char -> Maybe (PasswdPolicy Gen)
   toPaswdPolicy conf allowedSymbols =
     let
       seed =
-        (uncons <<< catMaybes) $ Switch.toMaybe
+        (fromArray <<< catMaybes) $ Switch.toMaybe
           <$> [ toSwitch conf.isUseDigit (Tuple conf.numDigit genDigitChar)
             , toSwitch conf.isUseUpper (Tuple conf.numUpper genAlphaUppercase)
             , toSwitch conf.isUseLower (Tuple conf.numLower genAlphaLowercase)
             , toSwitch conf.isUseSymbol (Tuple conf.numSymbol $ elements allowedSymbols)
             ]
     in
-      { length: conf.length, required: _ } <<< (\{ head, tail } -> head :| tail) <$> seed
+      { length: conf.length, required: _ } <$> seed
 
   handleAction :: PasswdConfigAction -> F.HalogenM Form () PasswdConfigAction GrandchildSlots GenPasswdConfig m Unit
   handleAction = case _ of
@@ -411,7 +411,7 @@ spec =
           HH.div
             [ HP.classes $ HH.ClassName <$> [ "field" ] ]
             [ labelBlock PasswdLength
-            , inputNumberForm PasswdLength (isJust err) true (F.getInput _length fstate.form) (Just <<< F.setValidate _length)
+            , inputNumberForm PasswdLength (isJust err) true (F.getInput _length fstate.form) (F.setValidate _length)
             , errorDisplay err
             ]
       , inputFormGroup
@@ -419,31 +419,31 @@ spec =
           (F.getError _numDigit fstate.form)
           (F.getInput _isUseDigit fstate.form)
           (F.getInput _numDigit fstate.form)
-          (Just <<< F.injAction <<< ToggleCharSetUse DigitCharNum)
-          (Just <<< F.setValidate _numDigit)
+          (F.injAction <<< ToggleCharSetUse DigitCharNum)
+          (F.setValidate _numDigit)
       , inputFormGroup
           AlphaUppercase
           (F.getError _numUpper fstate.form)
           (F.getInput _isUseUpper fstate.form)
           (F.getInput _numUpper fstate.form)
-          (Just <<< F.injAction <<< ToggleCharSetUse AlphaUppercase)
-          (Just <<< F.setValidate _numUpper)
+          (F.injAction <<< ToggleCharSetUse AlphaUppercase)
+          (F.setValidate _numUpper)
       , inputFormGroup
           AlphaLowercaseNum
           (F.getError _numLower fstate.form)
           (F.getInput _isUseLower fstate.form)
           (F.getInput _numLower fstate.form)
-          (Just <<< F.injAction <<< ToggleCharSetUse AlphaLowercaseNum)
-          (Just <<< F.setValidate _numLower)
+          (F.injAction <<< ToggleCharSetUse AlphaLowercaseNum)
+          (F.setValidate _numLower)
       , inputFormGroup
           SymbolCharNum
           (F.getError _numSymbol fstate.form)
           (F.getInput _isUseSymbol fstate.form)
           (F.getInput _numSymbol fstate.form)
-          (Just <<< F.injAction <<< ToggleCharSetUse SymbolCharNum)
-          (Just <<< F.setValidate _numSymbol)
+          (F.injAction <<< ToggleCharSetUse SymbolCharNum)
+          (F.setValidate _numSymbol)
       , errorDisplay (F.getError _isNonEmpty fstate.form)
-      , HH.slot _multichkboxes unit MultiChkboxes.component (not $ F.getInput _isUseSymbol fstate.form) (const Nothing)
+      , HH.slot_ _multichkboxes unit MultiChkboxes.component (not $ F.getInput _isUseSymbol fstate.form)
       ]
 
   inputFormGroup ::
@@ -452,8 +452,8 @@ spec =
     Maybe (Array ErrorCode) ->
     Boolean ->
     String ->
-    (Boolean -> Maybe FormAction) ->
-    (String -> Maybe FormAction) ->
+    (Boolean -> FormAction) ->
+    (String -> FormAction) ->
     HH.HTML slot FormAction
   inputFormGroup fieldType err isUsed inp onChecked onInput =
     HH.div
@@ -489,14 +489,14 @@ spec =
     Boolean ->
     Boolean ->
     String ->
-    (String -> Maybe FormAction) ->
+    (String -> FormAction) ->
     HH.HTML slot FormAction
   inputNumberForm fieldType hasErr isUsed inp onInput =
     HH.div
       [ HP.classes $ HH.ClassName <$> [ "control", "is-expanded" ] ]
       [ HH.input
           [ HP.type_ HP.InputNumber
-          , HP.id_ $ show fieldType
+          , HP.id $ show fieldType
           , HP.classes $ HH.ClassName
               <$> [ "input"
                 , if hasErr then
@@ -513,7 +513,7 @@ spec =
           ]
       ]
 
-  inputAddon :: forall slot. Boolean -> (Boolean -> Maybe FormAction) -> HH.HTML slot FormAction
+  inputAddon :: forall slot. Boolean -> (Boolean -> FormAction) -> HH.HTML slot FormAction
   inputAddon isUsed onChecked =
     HH.span
       [ HP.classes $ HH.ClassName <$> [ "control" ] ]

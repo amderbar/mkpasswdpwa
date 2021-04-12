@@ -3,7 +3,7 @@ module Mkpasswd.UI.Pages.List where
 import Prelude
 import Data.Array (mapWithIndex, null, catMaybes)
 import Data.Maybe (Maybe(..))
-import Data.Symbol (SProxy(..))
+import Type.Proxy (Proxy(..))
 import Effect.Class (class MonadEffect)
 import Halogen as H
 import Halogen.HTML as HH
@@ -34,7 +34,7 @@ data Action
   | ToggleMenu Int
   | Receive Input
 
-component :: forall q m. MonadEffect m => H.Component HH.HTML q Input DeleteTargetIdx m
+component :: forall q m. MonadEffect m => H.Component q Input DeleteTargetIdx m
 component =
   H.mkComponent
     { initialState
@@ -53,7 +53,7 @@ initialState = { list: _, openMenuIndex: Nothing }
 type ChildSlots
   = ( headerNav :: Nav.Slot Unit )
 
-_headerNav = SProxy :: SProxy "headerNav"
+_headerNav = Proxy :: Proxy "headerNav"
 
 render :: forall m. MonadEffect m => State -> H.ComponentHTML Action ChildSlots m
 render state =
@@ -124,7 +124,7 @@ menuBtn i =
   HH.a
     [ HP.classes $ HH.ClassName <$> [ "dropdown-trigger" ]
     , HP.attr (HH.AttrName "aria-label") "more options"
-    , HE.onClick $ \_ -> Just (ToggleMenu i)
+    , HE.onClick $ \_ -> ToggleMenu i
     ]
     [ HH.span
         [ HP.classes $ HH.ClassName <$> [ "icon" ] ]
@@ -142,7 +142,7 @@ dropdownItem mHref action icon label =
     ( catMaybes
         [ Just $ HP.classes $ HH.ClassName <$> [ "dropdown-item" ]
         , (HP.href <<< routeHref) <$> mHref
-        , Just $ HE.onClick \_ -> Just action
+        , Just $ HE.onClick \_ -> action
         ]
     )
     [ HH.span

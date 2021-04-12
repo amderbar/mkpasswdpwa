@@ -10,7 +10,7 @@ import Data.Either (Either(..))
 import Data.List (List(Nil))
 import Data.List.Types (toList)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Symbol (SProxy(..))
+import Type.Proxy (Proxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Effect.Storage (fetch, save)
 import Foreign (ForeignError)
@@ -28,11 +28,11 @@ type Slots
     , indexPage :: IndexPage.Slot Unit
     )
 
-_listPage = SProxy :: SProxy "listPage"
+_listPage = Proxy :: Proxy "listPage"
 
-_storePage = SProxy :: SProxy "storePage"
+_storePage = Proxy :: Proxy "storePage"
 
-_indexPage = SProxy :: SProxy "indexPage"
+_indexPage = Proxy :: Proxy "indexPage"
 
 type State
   = { route :: RouteHash
@@ -50,7 +50,7 @@ data Action
 data Query a
   = ChangeHash RouteHash a
 
-component :: forall i o m. MonadAff m => H.Component HH.HTML Query i o m
+component :: forall i o m. MonadAff m => H.Component Query i o m
 component =
   H.mkComponent
     { initialState
@@ -73,10 +73,10 @@ component =
 
   render :: State -> H.ComponentHTML Action Slots m
   render { route, storage, passwd } = case route of
-    Index -> HH.slot _indexPage unit IndexPage.component unit (Just <<< Mkpasswd)
-    List -> HH.slot _listPage unit ListPage.component storage (Just <<< Delete)
-    New -> HH.slot _storePage unit StorePage.component (initialForm { passwd = _ } <$> passwd) (Just <<< Save)
-    Store i -> HH.slot _storePage unit StorePage.component (storage !! i) (Just <<< Save)
+    Index -> HH.slot _indexPage unit IndexPage.component unit Mkpasswd
+    List -> HH.slot _listPage unit ListPage.component storage Delete
+    New -> HH.slot _storePage unit StorePage.component (initialForm { passwd = _ } <$> passwd) Save
+    Store i -> HH.slot _storePage unit StorePage.component (storage !! i) Save
 
   wsKey :: String
   wsKey = "mkpasswd"
