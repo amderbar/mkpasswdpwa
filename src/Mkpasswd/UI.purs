@@ -100,7 +100,7 @@ component =
       forcusIdx :: RouteHash -> Maybe Int
       forcusIdx = case _ of
         Store i -> Just i
-        otherwise -> Nothing
+        _ -> Nothing
     Delete i -> do
       s <- H.get
       let
