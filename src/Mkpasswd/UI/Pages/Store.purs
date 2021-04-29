@@ -4,7 +4,7 @@ import Prelude
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Maybe (Maybe, fromMaybe, isJust)
 import Data.Newtype (class Newtype)
 import Data.String as Str
 import Type.Proxy (Proxy(..))
@@ -192,7 +192,7 @@ spec =
       [ HP.classes $ HH.ClassName <$> [ "control" ] ]
       [ HH.input
           [ HP.type_ HP.InputText
-          , HP.id_ $ show fieldType
+          , HP.id $ show fieldType
           , HP.classes $ HH.ClassName
               <$> [ "input"
                 , if (isJust err) then
@@ -215,7 +215,7 @@ spec =
     HH.div
       [ HP.classes $ HH.ClassName <$> [ "control" ] ]
       [ HH.textarea
-          [ HP.id_ $ show fieldType
+          [ HP.id $ show fieldType
           , HP.classes $ HH.ClassName
               <$> [ "textarea"
                 , if (isJust err) then
