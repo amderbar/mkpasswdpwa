@@ -13992,9 +13992,6 @@ var PS = {};
   var min = prop(Halogen_HTML_Core.isPropNumber)("min");          
   var max = prop(Halogen_HTML_Core.isPropNumber)("max");   
   var id = prop(Halogen_HTML_Core.isPropString)("id");
-  var id_ = function (dictWarn) {
-      return id;
-  };
   var href = prop(Halogen_HTML_Core.isPropString)("href");
   var $$for = prop(Halogen_HTML_Core.isPropString)("htmlFor");    
   var disabled = prop(Halogen_HTML_Core.isPropBoolean)("disabled");
@@ -14013,7 +14010,6 @@ var PS = {};
   exports["for"] = $$for;
   exports["href"] = href;
   exports["id"] = id;
-  exports["id_"] = id_;
   exports["type_"] = type_;
   exports["value"] = value;
   exports["min"] = min;
@@ -17419,7 +17415,7 @@ var PS = {};
               return function (err) {
                   return function (inp) {
                       return function (onInput) {
-                          return Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes(Data_Functor.map(Data_Functor.functorArray)(Web_HTML_Common.ClassName)([ "control" ])) ])([ Halogen_HTML_Elements.textarea([ Halogen_HTML_Properties.id_()(Data_Show.show(showFieldType)(fieldType)), Halogen_HTML_Properties.classes(Data_Functor.map(Data_Functor.functorArray)(Web_HTML_Common.ClassName)([ "textarea", (function () {
+                          return Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes(Data_Functor.map(Data_Functor.functorArray)(Web_HTML_Common.ClassName)([ "control" ])) ])([ Halogen_HTML_Elements.textarea([ Halogen_HTML_Properties.id(Data_Show.show(showFieldType)(fieldType)), Halogen_HTML_Properties.classes(Data_Functor.map(Data_Functor.functorArray)(Web_HTML_Common.ClassName)([ "textarea", (function () {
                               var $20 = Data_Maybe.isJust(err);
                               if ($20) {
                                   return "is-danger";
@@ -17439,7 +17435,7 @@ var PS = {};
               return function (err) {
                   return function (inp) {
                       return function (onInput) {
-                          return Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes(Data_Functor.map(Data_Functor.functorArray)(Web_HTML_Common.ClassName)([ "control" ])) ])([ Halogen_HTML_Elements.input([ Halogen_HTML_Properties.type_(Halogen_HTML_Core.isPropInputType)(DOM_HTML_Indexed_InputType.InputText.value), Halogen_HTML_Properties.id_()(Data_Show.show(showFieldType)(fieldType)), Halogen_HTML_Properties.classes(Data_Functor.map(Data_Functor.functorArray)(Web_HTML_Common.ClassName)([ "input", (function () {
+                          return Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes(Data_Functor.map(Data_Functor.functorArray)(Web_HTML_Common.ClassName)([ "control" ])) ])([ Halogen_HTML_Elements.input([ Halogen_HTML_Properties.type_(Halogen_HTML_Core.isPropInputType)(DOM_HTML_Indexed_InputType.InputText.value), Halogen_HTML_Properties.id(Data_Show.show(showFieldType)(fieldType)), Halogen_HTML_Properties.classes(Data_Functor.map(Data_Functor.functorArray)(Web_HTML_Common.ClassName)([ "input", (function () {
                               var $21 = Data_Maybe.isJust(err);
                               if ($21) {
                                   return "is-danger";
