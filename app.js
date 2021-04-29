@@ -1215,9 +1215,9 @@ var PS = {};
       return function (dictFoldable) {
           return function (f) {
               return foldr(dictFoldable)((function () {
-                  var $311 = Control_Apply.applySecond(dictApplicative.Apply0());
-                  return function ($312) {
-                      return $311(f($312));
+                  var $313 = Control_Apply.applySecond(dictApplicative.Apply0());
+                  return function ($314) {
+                      return $313(f($314));
                   };
               })())(Control_Applicative.pure(dictApplicative)(Data_Unit.unit));
           };
@@ -1238,8 +1238,8 @@ var PS = {};
                   if (cursor.elem instanceof Data_Maybe.Just) {
                       return cursor;
                   };
-                  var $153 = cursor.pos === idx;
-                  if ($153) {
+                  var $155 = cursor.pos === idx;
+                  if ($155) {
                       return {
                           elem: new Data_Maybe.Just(a),
                           pos: cursor.pos
@@ -1251,14 +1251,14 @@ var PS = {};
                   };
               };
           };
-          var $313 = foldl(dictFoldable)(go)({
+          var $315 = foldl(dictFoldable)(go)({
               elem: Data_Maybe.Nothing.value,
               pos: 0
           });
-          return function ($314) {
+          return function ($316) {
               return (function (v) {
                   return v.elem;
-              })($313($314));
+              })($315($316));
           };
       };
   };
@@ -1268,15 +1268,15 @@ var PS = {};
       };
   }; 
   var foldableMaybe = new Foldable(function (dictMonoid) {
-      return function (f) {
-          return function (v) {
-              if (v instanceof Data_Maybe.Nothing) {
+      return function (v) {
+          return function (v1) {
+              if (v1 instanceof Data_Maybe.Nothing) {
                   return Data_Monoid.mempty(dictMonoid);
               };
-              if (v instanceof Data_Maybe.Just) {
-                  return f(v.value0);
+              if (v1 instanceof Data_Maybe.Just) {
+                  return v(v1.value0);
               };
-              throw new Error("Failed pattern match at Data.Foldable (line 138, column 1 - line 144, column 27): " + [ f.constructor.name, v.constructor.name ]);
+              throw new Error("Failed pattern match at Data.Foldable (line 138, column 1 - line 144, column 27): " + [ v.constructor.name, v1.constructor.name ]);
           };
       };
   }, function (v) {
@@ -1305,15 +1305,15 @@ var PS = {};
       };
   });
   var foldableEither = new Foldable(function (dictMonoid) {
-      return function (f) {
-          return function (v) {
-              if (v instanceof Data_Either.Left) {
+      return function (v) {
+          return function (v1) {
+              if (v1 instanceof Data_Either.Left) {
                   return Data_Monoid.mempty(dictMonoid);
               };
-              if (v instanceof Data_Either.Right) {
-                  return f(v.value0);
+              if (v1 instanceof Data_Either.Right) {
+                  return v(v1.value0);
               };
-              throw new Error("Failed pattern match at Data.Foldable (line 181, column 1 - line 187, column 28): " + [ f.constructor.name, v.constructor.name ]);
+              throw new Error("Failed pattern match at Data.Foldable (line 181, column 1 - line 187, column 28): " + [ v.constructor.name, v1.constructor.name ]);
           };
       };
   }, function (v) {
@@ -1365,10 +1365,10 @@ var PS = {};
   };
   var elem = function (dictFoldable) {
       return function (dictEq) {
-          var $321 = any(dictFoldable)(Data_HeytingAlgebra.heytingAlgebraBoolean);
-          var $322 = Data_Eq.eq(dictEq);
-          return function ($323) {
-              return $321($322($323));
+          var $323 = any(dictFoldable)(Data_HeytingAlgebra.heytingAlgebraBoolean);
+          var $324 = Data_Eq.eq(dictEq);
+          return function ($325) {
+              return $323($324($325));
           };
       };
   };
@@ -1524,9 +1524,9 @@ var PS = {};
   var foldableList = new Data_Foldable.Foldable(function (dictMonoid) {
       return function (f) {
           return Data_Foldable.foldl(foldableList)(function (acc) {
-              var $204 = Data_Semigroup.append(dictMonoid.Semigroup0())(acc);
-              return function ($205) {
-                  return $204(f($205));
+              var $205 = Data_Semigroup.append(dictMonoid.Semigroup0())(acc);
+              return function ($206) {
+                  return $205(f($206));
               };
           })(Data_Monoid.mempty(dictMonoid));
       };
@@ -1583,9 +1583,9 @@ var PS = {};
               };
               return go(Nil.value);
           })();
-          var $206 = Data_Foldable.foldl(foldableList)(Data_Function.flip(f))(b);
-          return function ($207) {
-              return $206(rev($207));
+          var $207 = Data_Foldable.foldl(foldableList)(Data_Function.flip(f))(b);
+          return function ($208) {
+              return $207(rev($208));
           };
       };
   });
@@ -1646,9 +1646,9 @@ var PS = {};
   var applicativeNonEmptyList = new Control_Applicative.Applicative(function () {
       return applyNonEmptyList;
   }, (function () {
-      var $235 = Data_NonEmpty.singleton(plusList);
-      return function ($236) {
-          return NonEmptyList($235($236));
+      var $236 = Data_NonEmpty.singleton(plusList);
+      return function ($237) {
+          return NonEmptyList($236($237));
       };
   })());
   exports["Nil"] = Nil;
@@ -4261,11 +4261,11 @@ var PS = {};
   })();
   var unsnoc = function (lst) {
       var go = function ($copy_v) {
-          return function ($copy_acc) {
+          return function ($copy_v1) {
               var $tco_var_v = $copy_v;
               var $tco_done = false;
               var $tco_result;
-              function $tco_loop(v, acc) {
+              function $tco_loop(v, v1) {
                   if (v instanceof Data_List_Types.Nil) {
                       $tco_done = true;
                       return Data_Maybe.Nothing.value;
@@ -4273,19 +4273,19 @@ var PS = {};
                   if (v instanceof Data_List_Types.Cons && v.value1 instanceof Data_List_Types.Nil) {
                       $tco_done = true;
                       return new Data_Maybe.Just({
-                          revInit: acc,
+                          revInit: v1,
                           last: v.value0
                       });
                   };
                   if (v instanceof Data_List_Types.Cons) {
                       $tco_var_v = v.value1;
-                      $copy_acc = new Data_List_Types.Cons(v.value0, acc);
+                      $copy_v1 = new Data_List_Types.Cons(v.value0, v1);
                       return;
                   };
-                  throw new Error("Failed pattern match at Data.List (line 274, column 3 - line 274, column 23): " + [ v.constructor.name, acc.constructor.name ]);
+                  throw new Error("Failed pattern match at Data.List (line 274, column 3 - line 274, column 21): " + [ v.constructor.name, v1.constructor.name ]);
               };
               while (!$tco_done) {
-                  $tco_result = $tco_loop($tco_var_v, $copy_acc);
+                  $tco_result = $tco_loop($tco_var_v, $copy_v1);
               };
               return $tco_result;
           };
@@ -4514,8 +4514,8 @@ var PS = {};
       };
       if (v instanceof CatCons) {
           return new Data_Maybe.Just(new Data_Tuple.Tuple(v.value0, (function () {
-              var $44 = Data_CatQueue["null"](v.value1);
-              if ($44) {
+              var $45 = Data_CatQueue["null"](v.value1);
+              if ($45) {
                   return CatNil.value;
               };
               return foldr(link)(CatNil.value)(v.value1);
@@ -4631,9 +4631,9 @@ var PS = {};
   var freeFunctor = new Data_Functor.Functor(function (k) {
       return function (f) {
           return Control_Bind.bindFlipped(freeBind)((function () {
-              var $120 = Control_Applicative.pure(freeApplicative);
-              return function ($121) {
-                  return $120(k($121));
+              var $119 = Control_Applicative.pure(freeApplicative);
+              return function ($120) {
+                  return $119(k($120));
               };
           })())(f);
       };
@@ -4650,14 +4650,14 @@ var PS = {};
   }, Control_Monad.ap(freeMonad));
   var freeApplicative = new Control_Applicative.Applicative(function () {
       return freeApply;
-  }, function ($122) {
-      return fromView(Return.create($122));
+  }, function ($121) {
+      return fromView(Return.create($121));
   });
   var liftF = function (f) {
       return fromView(new Bind(f, (function () {
-          var $123 = Control_Applicative.pure(freeApplicative);
-          return function ($124) {
-              return $123($124);
+          var $122 = Control_Applicative.pure(freeApplicative);
+          return function ($123) {
+              return $122($123);
           };
       })()));
   };
@@ -4669,8 +4669,8 @@ var PS = {};
                   return Data_Functor.map((((dictMonadRec.Monad0()).Bind1()).Apply0()).Functor0())(Control_Monad_Rec_Class.Done.create)(Control_Applicative.pure((dictMonadRec.Monad0()).Applicative0())(v.value0));
               };
               if (v instanceof Bind) {
-                  return Data_Functor.map((((dictMonadRec.Monad0()).Bind1()).Apply0()).Functor0())(function ($136) {
-                      return Control_Monad_Rec_Class.Loop.create(v.value1($136));
+                  return Data_Functor.map((((dictMonadRec.Monad0()).Bind1()).Apply0()).Functor0())(function ($135) {
+                      return Control_Monad_Rec_Class.Loop.create(v.value1($135));
                   })(k(v.value0));
               };
               throw new Error("Failed pattern match at Control.Monad.Free (line 158, column 10 - line 160, column 37): " + [ v.constructor.name ]);
@@ -6092,26 +6092,26 @@ var PS = {};
       return foldMapWithIndexDefaultR(foldableWithIndexArray)(dictMonoid);
   }, function (f) {
       return function (z) {
-          var $163 = Data_Foldable.foldl(Data_Foldable.foldableArray)(function (y) {
+          var $164 = Data_Foldable.foldl(Data_Foldable.foldableArray)(function (y) {
               return function (v) {
                   return f(v.value0)(y)(v.value1);
               };
           })(z);
-          var $164 = Data_FunctorWithIndex.mapWithIndex(Data_FunctorWithIndex.functorWithIndexArray)(Data_Tuple.Tuple.create);
-          return function ($165) {
-              return $163($164($165));
+          var $165 = Data_FunctorWithIndex.mapWithIndex(Data_FunctorWithIndex.functorWithIndexArray)(Data_Tuple.Tuple.create);
+          return function ($166) {
+              return $164($165($166));
           };
       };
   }, function (f) {
       return function (z) {
-          var $166 = Data_Foldable.foldr(Data_Foldable.foldableArray)(function (v) {
+          var $167 = Data_Foldable.foldr(Data_Foldable.foldableArray)(function (v) {
               return function (y) {
                   return f(v.value0)(v.value1)(y);
               };
           })(z);
-          var $167 = Data_FunctorWithIndex.mapWithIndex(Data_FunctorWithIndex.functorWithIndexArray)(Data_Tuple.Tuple.create);
-          return function ($168) {
-              return $166($167($168));
+          var $168 = Data_FunctorWithIndex.mapWithIndex(Data_FunctorWithIndex.functorWithIndexArray)(Data_Tuple.Tuple.create);
+          return function ($169) {
+              return $167($168($169));
           };
       };
   });
@@ -11685,8 +11685,8 @@ var PS = {};
           var diffProp = function (prevEvents, events) {
               return function (v, v1, v11, v2) {
                   if (v11 instanceof Attribute && v2 instanceof Attribute) {
-                      var $56 = v11.value2 === v2.value2;
-                      if ($56) {
+                      var $57 = v11.value2 === v2.value2;
+                      if ($57) {
                           return v2;
                       };
                       Halogen_VDom_Util.setAttribute(Data_Nullable.toNullable(v2.value0), v2.value1, v2.value2, el);
@@ -11699,8 +11699,8 @@ var PS = {};
                       };
                       if (v2.value0 === "value") {
                           var elVal = unsafeGetProperty("value", el);
-                          var $65 = Halogen_VDom_Util.refEq(elVal, v2.value1);
-                          if ($65) {
+                          var $66 = Halogen_VDom_Util.refEq(elVal, v2.value1);
+                          if ($66) {
                               return v2;
                           };
                           setProperty(v2.value0, v2.value1, el);
@@ -11872,18 +11872,18 @@ var PS = {};
       return Graft;
   })();
   var unGraft = function (f) {
-      return function ($52) {
-          return f($52);
+      return function ($55) {
+          return f($55);
       };
   }; 
   var graft = Unsafe_Coerce.unsafeCoerce;
   var bifunctorGraft = new Data_Bifunctor.Bifunctor(function (f) {
       return function (g) {
           return unGraft(function (v) {
-              return graft(new Graft(function ($54) {
-                  return f(v.value0($54));
-              }, function ($55) {
-                  return g(v.value1($55));
+              return graft(new Graft(function ($57) {
+                  return f(v.value0($57));
+              }, function ($58) {
+                  return g(v.value1($58));
               }, v.value2));
           });
       };
@@ -14128,8 +14128,8 @@ var PS = {};
       return Halogen_VDom_Machine.halt(v.attrs);
   };
   var eqElemSpec = function (ns1, v, ns2, v1) {
-      var $56 = v === v1;
-      if ($56) {
+      var $58 = v === v1;
+      if ($58) {
           if (ns1 instanceof Data_Maybe.Just && (ns2 instanceof Data_Maybe.Just && ns1.value0 === ns2.value0)) {
               return true;
           };
@@ -14159,7 +14159,7 @@ var PS = {};
               };
               return Halogen_VDom_Machine.mkStep(new Halogen_VDom_Machine.Step(state.node, nextState, patchElem, haltElem));
           };
-          var onThis = function (ix, s) {
+          var onThis = function (v2, s) {
               return Halogen_VDom_Machine.halt(s);
           };
           var onThese = function (ix, s, v2) {
@@ -14257,8 +14257,8 @@ var PS = {};
   var buildKeyed = function (v, build, ns1, name1, as1, ch1) {
       var el = Halogen_VDom_Util.createElement(Data_Nullable.toNullable(ns1), name1, v.document);
       var node = Web_DOM_Element.toNode(el);
-      var onChild = function (k, ix, v1) {
-          var res = build(v1.value1);
+      var onChild = function (v1, ix, v2) {
+          var res = build(v2.value1);
           Halogen_VDom_Util.insertChildIx(ix, Halogen_VDom_Machine.extract(res), node);
           return res;
       };
