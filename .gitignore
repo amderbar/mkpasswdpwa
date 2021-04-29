@@ -14,3 +14,6 @@
 /.psa*
 /.spago
 /docs/app.js
+
+# IDE Settings
+/.vscode/
