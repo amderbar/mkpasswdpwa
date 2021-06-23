@@ -6,13 +6,13 @@
   "scripts": {
     "build": "spago bundle-app --to docs/app.js",
     "watch": "spago bundle-app --watch --to docs/app.js",
-    "serve": "live-server --no-browser ./docs",
+    "serve": "web-dev-server --node-resolve --app-index docs/index.html --watch",
     "test": "spago test"
   },
   "author": "amderbar",
   "license": "MIT",
   "devDependencies": {
-    "live-server": "^1.2.1",
+    "@web/dev-server": "^0.1.17",
     "purescript": "^0.14.1",
     "purty": "^7.0.0",
     "spago": "^0.19.2"
