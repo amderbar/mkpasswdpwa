@@ -6,7 +6,7 @@
   "scripts": {
     "build": "spago bundle-app --to docs/app.js",
     "watch": "spago bundle-app --watch --to docs/app.js",
-    "serve": "web-dev-server --node-resolve --app-index docs/index.html --watch",
+    "serve": "wds --node-resolve --app-index docs/index.html --root-dir docs --watch",
     "test": "spago test"
   },
   "author": "amderbar",
