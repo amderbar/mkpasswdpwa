@@ -1,4 +1,4 @@
-module Mkpasswd.UI.Pages.Store where
+module Mkpasswd.Page.Store where
 
 import Prelude
 import Data.Either (Either(..))
@@ -15,7 +15,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Mkpasswd.Data.States (FormData)
-import Mkpasswd.UI.Components.HeaderNav as Nav
+import Mkpasswd.Component.HeaderNav as Nav
 import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
 import Routing.Hash (setHash)
 

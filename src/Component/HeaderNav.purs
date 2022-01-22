@@ -1,4 +1,4 @@
-module Mkpasswd.UI.Components.HeaderNav where
+module Mkpasswd.Component.HeaderNav where
 
 import Prelude
 import Mkpasswd.Data.Routing (RouteHash(..), hashStr)

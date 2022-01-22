@@ -16,9 +16,9 @@ import Foreign (ForeignError)
 import Halogen as H
 import Halogen.HTML as HH
 import Mkpasswd.Data.States (FormData, initialForm)
-import Mkpasswd.UI.Pages.List as ListPage
-import Mkpasswd.UI.Pages.Mkpasswd as IndexPage
-import Mkpasswd.UI.Pages.Store as StorePage
+import Mkpasswd.Page.List as ListPage
+import Mkpasswd.Page.Mkpasswd as IndexPage
+import Mkpasswd.Page.Store as StorePage
 import Mkpasswd.Data.Routing (RouteHash(..))
 
 type Slots

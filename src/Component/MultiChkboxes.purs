@@ -1,4 +1,4 @@
-module Mkpasswd.UI.Components.MultiChkboxes where
+module Mkpasswd.Component.MultiChkboxes where
 
 import Prelude
 import Data.Array ((:), mapWithIndex, modifyAt, catMaybes)

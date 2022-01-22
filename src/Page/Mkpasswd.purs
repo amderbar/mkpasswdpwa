@@ -1,4 +1,4 @@
-module Mkpasswd.UI.Pages.Mkpasswd where
+module Mkpasswd.Page.Mkpasswd where
 
 import Prelude
 import Data.Array (catMaybes)
@@ -24,8 +24,8 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Mkpasswd (mkpasswd)
 import Data.PasswdPolicy (PasswdPolicy)
-import Mkpasswd.UI.Components.HeaderNav as Nav
-import Mkpasswd.UI.Components.MultiChkboxes as MultiChkboxes
+import Mkpasswd.Component.HeaderNav as Nav
+import Mkpasswd.Component.MultiChkboxes as MultiChkboxes
 import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
 import Test.QuickCheck.Gen (Gen, elements)
 
