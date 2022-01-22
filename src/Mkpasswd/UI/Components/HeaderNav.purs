@@ -1,7 +1,7 @@
 module Mkpasswd.UI.Components.HeaderNav where
 
 import Prelude
-import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
+import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -43,7 +43,7 @@ render s =
             [ HP.classes $ HH.ClassName <$> [ "navbar-brand" ] ]
             [ HH.a
                 [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
-                , HP.href $ routeHref Index
+                , HP.href $ hashStr Index
                 ]
                 [ HH.strong_ [ HH.text "RandomStr" ] ]
             , HH.a
@@ -65,13 +65,13 @@ render s =
                 [ HH.a
                     [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
                     , HE.onClick \_ -> SetMenu false
-                    , HP.href $ routeHref Index
+                    , HP.href $ hashStr Index
                     ]
                     [ HH.text "Generate" ]
                 , HH.a
                     [ HP.classes $ HH.ClassName <$> [ "navbar-item" ]
                     , HE.onClick \_ -> SetMenu false
-                    , HP.href $ routeHref List
+                    , HP.href $ hashStr List
                     ]
                     [ HH.text "Gallery" ]
                 ]

@@ -11,7 +11,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Mkpasswd.Data.States (FormData)
 import Mkpasswd.UI.Components.HeaderNav as Nav
-import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
+import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
 import Web.HTML as Web
 import Web.HTML.Window as Win
 
@@ -141,7 +141,7 @@ dropdownItem mHref action icon label =
   HH.a
     ( catMaybes
         [ Just $ HP.classes $ HH.ClassName <$> [ "dropdown-item" ]
-        , (HP.href <<< routeHref) <$> mHref
+        , (HP.href <<< hashStr) <$> mHref
         , Just $ HE.onClick \_ -> action
         ]
     )
@@ -172,7 +172,7 @@ footerBtnArea =
       [ HP.classes $ HH.ClassName <$> [ "sticky-bottom", "p1", "is-pulled-right" ] ]
       [ HH.a
           [ HP.classes $ HH.ClassName <$> [ "button", "is-dark", "is-rounded" ]
-          , HP.href $ routeHref New
+          , HP.href $ hashStr New
           ]
           [ HH.span
               [ HP.classes $ HH.ClassName <$> [ "icon" ] ]

@@ -1,7 +1,6 @@
 module Mkpasswd.UI
   ( component
   , Query(..)
-  , module Mkpasswd.UI.Routing
   ) where
 
 import Prelude
@@ -20,7 +19,7 @@ import Mkpasswd.Data.States (FormData, initialForm)
 import Mkpasswd.UI.Pages.List as ListPage
 import Mkpasswd.UI.Pages.Mkpasswd as IndexPage
 import Mkpasswd.UI.Pages.Store as StorePage
-import Mkpasswd.UI.Routing (RouteHash(..), routing)
+import Mkpasswd.Data.Routing (RouteHash(..))
 
 type Slots
   = ( listPage :: ListPage.Slot Unit

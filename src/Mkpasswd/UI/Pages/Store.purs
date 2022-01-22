@@ -16,7 +16,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Mkpasswd.Data.States (FormData)
 import Mkpasswd.UI.Components.HeaderNav as Nav
-import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
+import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
 import Routing.Hash (setHash)
 
 type Slot id
@@ -58,7 +58,7 @@ component =
   handleAction :: Action -> H.HalogenM (Maybe FormData) Action Slots NewFormData m Unit
   handleAction = case _ of
     HandleFormless fd -> do
-      H.liftEffect $ setHash $ routeHref List
+      H.liftEffect $ setHash $ hashStr List
       H.raise fd
 
 -- Formless
@@ -166,7 +166,7 @@ spec =
               [ HP.classes $ HH.ClassName <$> [ "control" ] ]
               [ HH.a
                   [ HP.classes $ HH.ClassName <$> [ "button" ]
-                  , HP.href $ routeHref List
+                  , HP.href $ hashStr List
                   ]
                   [ HH.text "Cancel" ]
               ]

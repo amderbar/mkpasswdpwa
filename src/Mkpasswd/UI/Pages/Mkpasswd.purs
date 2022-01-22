@@ -26,7 +26,7 @@ import Mkpasswd (mkpasswd)
 import Data.PasswdPolicy (PasswdPolicy)
 import Mkpasswd.UI.Components.HeaderNav as Nav
 import Mkpasswd.UI.Components.MultiChkboxes as MultiChkboxes
-import Mkpasswd.UI.Routing (RouteHash(..), routeHref)
+import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
 import Test.QuickCheck.Gen (Gen, elements)
 
 type Slot id
@@ -139,7 +139,7 @@ component =
               [ HH.a
                   [ HP.classes $ HH.ClassName <$> [ "button", "is-dark" ]
                   , HE.onClick \_ -> Save
-                  , HP.href $ routeHref New
+                  , HP.href $ hashStr New
                   ]
                   [ HH.text "Save" ]
               , HH.button
