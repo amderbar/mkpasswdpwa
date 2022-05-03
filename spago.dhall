@@ -21,6 +21,7 @@ You can edit this file as you like.
   , "lists"
   , "maybe"
   , "newtype"
+  , "optparse"
   , "prelude"
   , "psci-support"
   , "quickcheck"
