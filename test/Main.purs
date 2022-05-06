@@ -8,11 +8,11 @@ import Data.Array.NonEmpty (fromArray)
 import Data.Char.Gen (genDigitChar, genAlphaLowercase, genAlphaUppercase)
 import Data.Char.Gen.Symbols (genSymbolChar)
 import Data.Foldable (for_)
-import Data.Maybe (fromMaybe, Maybe(..))
+import Data.Maybe (Maybe(..))
 import Data.PasswdPolicy (PasswdPolicy)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Class.Console (logShow)
+import Effect.Class.Console (log)
 import Mkpasswd (mkpasswd)
 
 main :: Effect Unit
@@ -26,10 +26,10 @@ main = do
           , Just (Tuple 1 genSymbolChar)
           ]
     in
-      logShow =<< fromMaybe "" <$>
+      log =<<
         case mkPolicy 9 conf of
           Just policy -> mkpasswd policy
-          Nothing -> pure Nothing
+          Nothing -> pure ""
   where
   mkPolicy :: forall m. MonadRec m => MonadGen m => Int -> Array (Maybe (Tuple Int (m Char))) -> Maybe (PasswdPolicy m)
   mkPolicy len conf = { length: len, required: _ } <$> (fromArray <<< catMaybes) conf

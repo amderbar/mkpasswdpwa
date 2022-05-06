@@ -2,9 +2,10 @@
 Welcome to a Spago project!
 You can edit this file as you like.
 -}
-{ name = "my-project"
+{ name = "mkpasswdpwa"
 , dependencies =
   [ "aff"
+  , "argparse-basic"
   , "arrays"
   , "console"
   , "const"
@@ -21,14 +22,14 @@ You can edit this file as you like.
   , "lists"
   , "maybe"
   , "newtype"
-  , "optparse"
+  , "node-process"
   , "prelude"
   , "psci-support"
   , "quickcheck"
   , "routing"
-  , "simple-json"
   , "strings"
   , "tailrec"
+  , "transformers"
   , "tuples"
   , "web-events"
   , "web-html"
