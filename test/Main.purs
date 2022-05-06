@@ -1,35 +1,54 @@
-module Test.Main where
+module Test.Main (main) where
 
 import Prelude
-import Control.Monad.Gen (class MonadGen)
-import Control.Monad.Rec.Class (class MonadRec)
-import Data.Array ((..), catMaybes)
-import Data.Array.NonEmpty (fromArray)
-import Data.Char.Gen (genDigitChar, genAlphaLowercase, genAlphaUppercase)
-import Data.Char.Gen.Symbols (genSymbolChar)
-import Data.Foldable (for_)
-import Data.Maybe (Maybe(..))
-import Data.PasswdPolicy (PasswdPolicy)
-import Data.Tuple (Tuple(..))
+import Data.Char.Symbols.Gen (symbols)
+import Data.Count (Count, fromCount)
+import Data.Foldable (class Foldable, elem, sum)
+import Data.Length (fromLength)
+import Data.Passwd (Passwd(..))
+import Data.Passwd.Gen (genPasswd)
+import Data.Policy (Policy)
+import Data.String (length)
+import Data.String.CodeUnits (toCharArray)
 import Effect (Effect)
-import Effect.Class.Console (log)
-import Mkpasswd (mkpasswd)
+import Effect.Aff (launchAff_)
+import Test.QuickCheck (Result, arbitrary, (>=?))
+import Test.QuickCheck.Gen (Gen)
+import Test.Spec (describe, it)
+import Test.Spec.QuickCheck (quickCheck)
+import Test.Spec.Reporter.Console (consoleReporter)
+import Test.Spec.Runner (runSpec)
 
 main :: Effect Unit
-main = do
-  for_ (0 .. 99) \_ ->
-    let
-      conf
-        = [ Just (Tuple 2 genDigitChar)
-          , Just (Tuple 1 genAlphaUppercase)
-          , Just (Tuple 1 genAlphaLowercase)
-          , Just (Tuple 1 genSymbolChar)
-          ]
-    in
-      log =<<
-        case mkPolicy 9 conf of
-          Just policy -> mkpasswd policy
-          Nothing -> pure ""
+main =
+  launchAff_
+    $ runSpec [ consoleReporter ] do
+        describe "Generated Passwd from Policy" do
+          it "should be longer than the length specified in the policy" do
+            quickCheck $ passwdProp chkLength
+          it "should contain more digits than specified in the policy" do
+            quickCheck $ passwdProp \p -> chkCharTypeNum (toCharArray "0123456789") p.digitNum
+          it "should contain more capital letters than specified in the policy" do
+            quickCheck $ passwdProp \p -> chkCharTypeNum (toCharArray "ABCDEFGHIJKLMNOPQRSTUVWXYZ") p.capitalNum
+          it "should contain more lowercase letters than specified in the policy" do
+            quickCheck $ passwdProp \p -> chkCharTypeNum (toCharArray "abcdefghijklmnopqrstuvwxyz") p.lowercaseNum
+          it "should contain more symbols than specified in the policy" do
+            quickCheck $ passwdProp \p -> chkCharTypeNum symbols p.symbolNum
+
+passwdProp :: (Policy -> Passwd -> Result) -> Gen Result
+passwdProp chk = do
+  p <- arbitrary
+  ret <- genPasswd p
+  pure (chk p ret)
+
+chkLength :: Policy -> Passwd -> Result
+chkLength p (Passwd r) = length r >=? fromLength p.length
+
+chkCharTypeNum :: forall f. Foldable f => f Char -> Count -> Passwd -> Result
+chkCharTypeNum charset cnt (Passwd p) = countUp p >=? fromCount cnt
   where
-  mkPolicy :: forall m. MonadRec m => MonadGen m => Int -> Array (Maybe (Tuple Int (m Char))) -> Maybe (PasswdPolicy m)
-  mkPolicy len conf = { length: len, required: _ } <$> (fromArray <<< catMaybes) conf
+  countUp :: String -> Int
+  countUp =
+    toCharArray
+      >>> map (\c -> if c `elem` charset then 1 else 0)
+      >>> sum
