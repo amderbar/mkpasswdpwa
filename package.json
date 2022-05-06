@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "spago bundle-app --to docs/app.js",
+    "build": "spago bundle-app --minify --to docs/app.js",
     "watch": "spago bundle-app --watch --to docs/app.js",
     "serve": "wds --node-resolve --app-index docs/index.html --root-dir docs --watch",
     "test": "spago test"
@@ -13,6 +13,7 @@
   "license": "MIT",
   "devDependencies": {
     "@web/dev-server": "^0.1.17",
+    "esbuild": "^0.14.38",
     "purescript": "^0.15.0",
     "purty": "^7.0.0",
     "spago": "^0.20.3"
