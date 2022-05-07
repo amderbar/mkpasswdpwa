@@ -1,11 +1,12 @@
 module Main.CLI (main) where
 
 import Prelude
-import ArgParse.Basic (ArgParser, argument, default, flagHelp, fromRecord, int, parseArgs, printArgError, unformat)
+import ArgParse.Basic (ArgParser, argument, choose, default, flag, flagHelp, fromRecord, int, parseArgs, printArgError, unformat)
 import Data.Array (drop)
 import Data.Count (Count, fromCount, toCount)
 import Data.Either (Either(..), note)
 import Data.Length (Length, fromLength, toLength)
+import Data.Maybe (Maybe(..))
 import Data.Passwd.Gen (genPasswd)
 import Data.Policy (Policy)
 import Effect (Effect)
@@ -20,44 +21,73 @@ main = do
       argParser
         { header: "mkpasswdpwa"
         , desc: "Random string generation"
-        , parser: policyArg <* flagHelp
+        , parser: unformat "" genPasswd policyArg <* flagHelp
         }
   args <- Process.argv <#> drop 2
   case execParser args of
-    Right policy -> logShow =<< randomSampleOne (genPasswd policy)
+    Right gen -> logShow =<< randomSampleOne gen
     Left err -> log (printArgError err)
   where
   argParser { header, desc, parser } = parseArgs header desc parser
 
 policyArg :: ArgParser Policy
 policyArg =
-  fromRecord
-    { length:
-        argument [ "--length", "-l" ] "Required length."
-          # int
-          # default 9
-          # lengthArg
-    , digitNum:
-        argument [ "--digit", "-d" ] "Minimum number of digits to include."
-          # int
-          # default 2
-          # countArg
-    , lowercaseNum:
-        argument [ "--lowercase", "-c" ] "Minimum number of lowercase characters to include."
-          # int
-          # default 2
-          # countArg
-    , capitalNum:
-        argument [ "--capital", "-C" ] "Minimum number of capital letters to include."
-          # int
-          # default 2
-          # countArg
-    , symbolNum:
-        argument [ "--symbol", "-s" ] "Minimum number of symbols to include."
-          # int
-          # default 1
-          # countArg
-    }
+  let
+    digitNumArg =
+      argument [ "--digit", "-d" ] "Minimum number of digits to include."
+        # int
+        # default 2
+        # countArg
+
+    lowercaseNum =
+      argument [ "--lowercase", "-c" ] "Minimum number of lowercase characters to include."
+        # int
+        # default 2
+        # countArg
+
+    capitalNum =
+      argument [ "--capital", "-C" ] "Minimum number of capital letters to include."
+        # int
+        # default 2
+        # countArg
+
+    symbolNum =
+      argument [ "--symbol", "-s" ] "Minimum number of symbols to include."
+        # int
+        # default 1
+        # countArg
+  in
+    fromRecord
+      { length:
+          argument [ "--length", "-l" ] "Required length."
+            # int
+            # default 9
+            # lengthArg
+      , digitNum:
+          choose "digits"
+            [ Just <$> digitNumArg
+            , flag [ "-nd", "--no-digits" ] "exclude digits." $> Nothing
+            ]
+            # default (toCount 2)
+      , lowercaseNum:
+          choose "lowercase letters"
+            [ Just <$> lowercaseNum
+            , flag [ "-nc", "--no-lowercases" ] "exclude lowercase letters." $> Nothing
+            ]
+            # default (toCount 2)
+      , capitalNum:
+          choose "capital letters"
+            [ Just <$> capitalNum
+            , flag [ "-nC", "--no-capitals" ] "exclude capital letters." $> Nothing
+            ]
+            # default (toCount 2)
+      , symbolNum:
+          choose "symbols"
+            [ Just <$> symbolNum
+            , flag [ "-ns", "--no-symbols" ] "exclude symbols." $> Nothing
+            ]
+            # default (toCount 1)
+      }
 
 lengthArg :: ArgParser Int -> ArgParser Length
 lengthArg = unformat "INT" (note msg <<< toLength)

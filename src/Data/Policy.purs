@@ -1,12 +1,13 @@
 module Data.Policy where
 
-import Data.Length (Length)
-import Data.Count (Count)
+import Data.Count (Count, toCount)
+import Data.Length (Length, toLength)
+import Data.Maybe (Maybe)
 
 type Policy
   = { length :: Length
-    , digitNum :: Count
-    , lowercaseNum :: Count
-    , capitalNum :: Count
-    , symbolNum :: Count
+    , digitNum :: Maybe Count
+    , lowercaseNum :: Maybe Count
+    , capitalNum :: Maybe Count
+    , symbolNum :: Maybe Count
     }
