@@ -1,6 +1,4 @@
-module Mkpasswd.Cli.Main
-  ( main
-  ) where
+module Main.CLI (main) where
 
 import Prelude
 import ArgParse.Basic (ArgParser, argument, default, flagHelp, fromRecord, int, parseArgs, printArgError, unformat)
@@ -8,11 +6,12 @@ import Data.Array (drop)
 import Data.Count (Count, fromCount, toCount)
 import Data.Either (Either(..), note)
 import Data.Length (Length, fromLength, toLength)
+import Data.Passwd.Gen (genPasswd)
 import Data.Policy (Policy)
 import Effect (Effect)
 import Effect.Console (log, logShow)
-import Mkpasswd (mkpasswd)
 import Node.Process (argv) as Process
+import Test.QuickCheck.Gen (randomSampleOne)
 
 main :: Effect Unit
 main = do
@@ -25,7 +24,7 @@ main = do
         }
   args <- Process.argv <#> drop 2
   case execParser args of
-    Right policy -> logShow =<< mkpasswd policy
+    Right policy -> logShow =<< randomSampleOne (genPasswd policy)
     Left err -> log (printArgError err)
   where
   argParser { header, desc, parser } = parseArgs header desc parser
@@ -61,27 +60,23 @@ policyArg =
     }
 
 lengthArg :: ArgParser Int -> ArgParser Length
-lengthArg = unformat "INT" chk
+lengthArg = unformat "INT" (note msg <<< toLength)
   where
-  chk =
+  msg =
     let
       b = fromLength bottom
 
       t = fromLength top
-
-      msg = "Expected INT between " <> (show b) <> " to " <> (show t)
     in
-      note msg <<< toLength
+      "Expected INT between " <> (show b) <> " to " <> (show t)
 
 countArg :: ArgParser Int -> ArgParser Count
-countArg = unformat "INT" chk
+countArg = unformat "INT" (note msg <<< toCount)
   where
-  chk =
+  msg =
     let
       b = fromCount bottom
 
       t = fromCount top
-
-      msg = "Expected INT between " <> (show b) <> " to " <> (show t)
     in
-      note msg <<< toCount
+      "Expected INT between " <> (show b) <> " to " <> (show t)

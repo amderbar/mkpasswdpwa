@@ -15,12 +15,6 @@ import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), fst, snd, uncurry)
 import Test.QuickCheck.Gen (Gen, vectorOf, shuffle)
 
-type CharType m
-  = Tuple Int (m Char)
-
-type CharTypeArray m
-  = NonEmptyArray (CharType m)
-
 genPasswd :: Policy -> Gen Passwd
 genPasswd policy@{ length } =
   let
@@ -39,7 +33,7 @@ genPasswd policy@{ length } =
       passcode <- shuffle (join $ toArray charsets)
       pure (Passwd $ fromCharArray passcode)
 
-toCharTypeArray :: forall m. MonadGen m => Policy -> CharTypeArray m
+toCharTypeArray :: forall m. MonadGen m => Policy -> NonEmptyArray (Tuple Int (m Char))
 toCharTypeArray p =
   singleton (Tuple (fromCount p.digitNum) genDigitChar)
     `appendArray`

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "spago bundle-app --minify --to docs/app.js",
-    "cli": "spago run --main Mkpasswd.Cli.Main",
+    "cli": "spago run --main Main.CLI",
     "watch": "spago bundle-app --watch --to docs/app.js",
     "serve": "wds --node-resolve --app-index docs/index.html --root-dir docs --watch",
     "test": "spago test"
