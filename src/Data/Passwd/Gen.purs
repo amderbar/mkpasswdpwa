@@ -1,15 +1,15 @@
 module Data.Passwd.Gen (genPasswd) where
 
 import Prelude
-import Control.Monad.Gen (class MonadGen, oneOf)
+import Control.Monad.Gen (class MonadGen, elements, oneOf)
 import Data.Array (catMaybes)
 import Data.Array.NonEmpty (NonEmptyArray, toArray, fromArray, (:))
 import Data.Char.Gen (genDigitChar, genAlphaLowercase, genAlphaUppercase)
-import Data.Char.Symbols.Gen (genSymbolChar)
 import Data.Count (fromCount)
 import Data.Either (Either, note)
 import Data.Foldable (sum)
 import Data.Length (fromLength)
+import Data.Newtype (unwrap)
 import Data.Passwd (Passwd(Passwd))
 import Data.Policy (Policy)
 import Data.String.CodeUnits (fromCharArray)
@@ -41,7 +41,7 @@ toCharTypeArray p =
     [ p.digitNum <#> \c -> Tuple (fromCount c) genDigitChar
     , p.capitalNum <#> \c -> Tuple (fromCount c) genAlphaUppercase
     , p.lowercaseNum <#> \c -> Tuple (fromCount c) genAlphaLowercase
-    , p.symbolNum <#> \c -> Tuple (fromCount c) genSymbolChar
+    , p.symbolNum <#> \{ count, charset } -> Tuple (fromCount count) (elements $ unwrap <$> charset)
     ]
     # fromArray
     # note "At least one character type must be included."

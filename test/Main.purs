@@ -1,12 +1,13 @@
 module Test.Main (main) where
 
 import Prelude
-import Data.Char.Symbols.Gen (symbols)
+import Data.Char.Symbols (symbols)
 import Data.Count (Count, fromCount)
 import Data.Either (Either(..))
 import Data.Foldable (class Foldable, elem, sum)
 import Data.Length (fromLength)
 import Data.Maybe (Maybe(..))
+import Data.Newtype (unwrap)
 import Data.Passwd (Passwd(..))
 import Data.Passwd.Gen (genPasswd)
 import Data.Policy (Policy)
@@ -35,7 +36,10 @@ main =
           it "should contain more lowercase letters than specified in the policy" do
             quickCheck $ passwdProp \p -> chkCharTypeNum (toCharArray "abcdefghijklmnopqrstuvwxyz") p.lowercaseNum
           it "should contain more symbols than specified in the policy" do
-            quickCheck $ passwdProp \p -> chkCharTypeNum symbols p.symbolNum
+            quickCheck
+              $ passwdProp \p -> case p.symbolNum of
+                  Just { count, charset } -> chkCharTypeNum (unwrap <$> charset) (Just count)
+                  Nothing -> chkCharTypeNum (unwrap <$> symbols) Nothing
 
 passwdProp :: (Policy -> Passwd -> Result) -> Gen Result
 passwdProp chk = do

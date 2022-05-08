@@ -3,6 +3,7 @@ module Main.CLI (main) where
 import Prelude
 import ArgParse.Basic (ArgParser, argument, choose, default, flag, flagHelp, fromRecord, int, parseArgs, printArgError, unformat)
 import Data.Array (drop)
+import Data.Char.Symbols (symbols, toNonEmptySymbolCharArrray)
 import Data.Count (Count, fromCount, toCount)
 import Data.Either (Either(..), note)
 import Data.Length (Length, fromLength, toLength)
@@ -56,6 +57,10 @@ policyArg =
         # int
         # default 1
         # countArg
+
+    symbolSet =
+      argument [ "--symbol-set" ] "Avairable symbols to include."
+        # unformat "STR" toNonEmptySymbolCharArrray
   in
     fromRecord
       { length:
@@ -83,10 +88,10 @@ policyArg =
             # default (toCount 2)
       , symbolNum:
           choose "symbols"
-            [ Just <$> symbolNum
+            [ Just <$> fromRecord { count: symbolNum, charset: symbolSet }
             , flag [ "-ns", "--no-symbols" ] "exclude symbols." $> Nothing
             ]
-            # default (toCount 1)
+            # default ({ count: _, charset: symbols } <$> toCount 1)
       }
 
 lengthArg :: ArgParser Int -> ArgParser Length
