@@ -13,6 +13,7 @@ import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
 import Page.List as ListPage
 import Page.Mkpasswd as MkpasswdPage
+import Page.Store as StorePage
 import Routing.Hash (matches)
 import Type.Proxy (Proxy(..))
 
@@ -39,6 +40,7 @@ type State
 
 data Action
   = Mkpasswd (Maybe Passwd)
+  | Save StorePage.Output
   | Delete ListPage.DeleteTargetIdx
 
 data Query a
@@ -47,11 +49,14 @@ data Query a
 type Slots
   = ( mkpasswdPage :: MkpasswdPage.Slot Unit
     , listPage :: ListPage.Slot Unit
+    , storePage :: StorePage.Slot Unit
     )
 
 _mkpasswdPage = Proxy :: Proxy "mkpasswdPage"
 
 _listPage = Proxy :: Proxy "listPage"
+
+_storePage = Proxy :: Proxy "storePage"
 
 rootComponent :: forall i o m. MonadAff m => H.Component Query i o m
 rootComponent =
@@ -64,14 +69,16 @@ rootComponent =
   initialState _ = { route: Index }
 
   render :: State -> H.ComponentHTML _ _ _
-  render s@{ route } = case route of
+  render { route } = case route of
     Index -> HH.slot _mkpasswdPage unit MkpasswdPage.component unit Mkpasswd
     List -> HH.slot _listPage unit ListPage.component [] Delete
-    _ -> render s { route = Index }
+    New -> HH.slot _storePage unit StorePage.component Nothing Save
+    Store _ -> HH.slot _storePage unit StorePage.component Nothing Save
 
   handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
   handleAction = case _ of
     Mkpasswd _ -> pure unit
+    Save _ -> pure unit
     Delete _ -> pure unit
 
   handleQuery :: forall u. Query u -> H.HalogenM _ _ _ _ _ (Maybe u)

@@ -111,6 +111,28 @@ inputAddon checked onChecked =
         ]
     ]
 
+textAreaForm ::
+  forall id slot action.
+  Show id =>
+  id ->
+  Boolean ->
+  String ->
+  (String -> action) ->
+  HH.HTML slot action
+textAreaForm fieldId hasErr inp onInput =
+  HH.div
+    [ classes [ "control" ] ]
+    [ HH.textarea
+        [ HP.id $ show fieldId
+        , classes
+            [ "input"
+            , if hasErr then "is-danger" else ""
+            ]
+        , HP.value inp
+        , HE.onValueInput onInput
+        ]
+    ]
+
 errorDisplay :: forall slot action. Array ErrText -> HH.HTML slot action
 errorDisplay = case _ of
   [] -> emptyNode

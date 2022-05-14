@@ -1,67 +1,205 @@
-module Mkpasswd.Page.Store where
+module Page.Store where
 
 import Prelude
+import Component.HeaderNav as Nav
+import Component.RenderUtil (classes, inputFormContainer, inputTextForm, textAreaForm)
+import Data.Array (null)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
+import Data.Maybe (Maybe(..))
+import Data.Routing (RouteHash(..), hashStr)
 import Data.Show.Generic (genericShow)
-import Data.Maybe (Maybe, fromMaybe, isJust)
-import Data.Newtype (class Newtype)
+import Data.States (FormData)
 import Data.String as Str
-import Type.Proxy (Proxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Mkpasswd.Data.States (FormData)
-import Mkpasswd.Component.HeaderNav as Nav
-import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
 import Routing.Hash (setHash)
+import Type.Proxy (Proxy(..))
 
 type Slot id
-  = forall q. H.Slot q NewFormData id
+  = forall q. H.Slot q Output id
 
 type Slots
-  = ( headerNav :: Nav.Slot Unit
-    , formless :: F.Slot' Form FormData Unit
-    )
+  = ( headerNav :: Nav.Slot Unit )
 
 _headerNav = Proxy :: Proxy "headerNav"
 
-type NewFormData
+type Form (f :: Type -> Type -> Type -> Type)
+  = ( account :: f String ErrorCode String
+    , passwd :: f String ErrorCode String
+    , note :: f String ErrorCode String
+    )
+
+type FieldState
+  = Form F.FieldState
+
+type FieldAction
+  = Form (F.FieldAction Action)
+
+type FieldInput
+  = Form F.FieldInput
+
+type FieldResult
+  = Form F.FieldResult
+
+type FieldOutput
+  = Form F.FieldOutput
+
+type FormQuery query
+  = F.FormQuery query FieldInput FieldResult FieldOutput
+
+type FormOutput
+  = F.FormOutput FieldState Output
+
+type FormContext
+  = F.FormContext FieldState FieldAction Input Action
+
+type State
+  = FormContext
+
+type Input
+  = Maybe FormData
+
+type Output
   = FormData
 
 data Action
-  = HandleFormless FormData
+  = Receive FormContext
+  | Eval (F.FormlessAction FieldState)
 
-component :: forall q m. MonadAff m => H.Component q (Maybe FormData) NewFormData m
+component :: forall q m. MonadAff m => H.Component q Input Output m
 component =
-  H.mkComponent
-    { initialState
-    , render
-    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+  (\c -> F.formless c initialValues innerComponent)
+    { liftAction: Eval
+    , validateOnChange: true
     }
   where
-  initialState :: Maybe FormData -> Maybe FormData
-  initialState = identity
+  initialValues :: { | Form F.FieldInput }
+  initialValues =
+    { account: ""
+    , passwd: ""
+    , note: ""
+    }
 
-  render :: Maybe FormData -> H.ComponentHTML Action Slots m
+  innerComponent :: H.Component (FormQuery q) FormContext FormOutput m
+  innerComponent =
+    H.mkComponent
+      { initialState: identity
+      , render
+      , eval:
+          H.mkEval
+            $ H.defaultEval
+                { receive = Just <<< Receive
+                , handleAction = handleAction
+                , handleQuery = handleQuery
+                }
+      }
+
+  render :: State -> H.ComponentHTML _ _ _
   render state =
     HH.main_
       [ HH.slot _headerNav unit Nav.component unit absurd
       , HH.section
-          [ HP.classes $ HH.ClassName <$> [ "section" ] ]
-          [ HH.slot F._formless unit (F.component formInput spec) state HandleFormless ]
+          [ classes [ "section" ] ]
+          [ formArea state ]
       ]
 
-  handleAction :: Action -> H.HalogenM (Maybe FormData) Action Slots NewFormData m Unit
-  handleAction = case _ of
-    HandleFormless fd -> do
-      H.liftEffect $ setHash $ hashStr List
-      H.raise fd
+  formArea :: FormContext -> H.ComponentHTML _ _ _
+  formArea { fields, actions, formActions } =
+    HH.div
+      [ classes [ "container" ] ]
+      [ inputSingleLineText AccountInput fields.account actions.account.handleChange
+      , inputSingleLineText Passwdinput fields.passwd actions.passwd.handleChange
+      , inputNote NoteTextarea fields.note actions.note.handleChange
+      , HH.div
+          [ classes [ "field", "is-grouped" ] ]
+          [ HH.span
+              [ classes [ "control" ] ]
+              [ HH.button
+                  [ classes [ "button", "is-dark" ]
+                  , HE.onClick \_ -> formActions.submit
+                  ]
+                  [ HH.text "Save" ]
+              ]
+          , HH.span
+              [ classes [ "control" ] ]
+              [ HH.a
+                  [ classes [ "button" ]
+                  , HP.href $ hashStr List
+                  ]
+                  [ HH.text "Cancel" ]
+              ]
+          ]
+      ]
 
--- Formless
+  inputSingleLineText ::
+    FieldType ->
+    { result :: Maybe (Either ErrorCode String), value :: String | _ } ->
+    (_ -> Action) ->
+    H.ComponentHTML _ _ _
+  inputSingleLineText ftype inp handleChange =
+    let
+      errArr = case inp.result of
+        Just (Left e) -> [ errorMsg e ]
+        _ -> []
+    in
+      inputFormContainer ftype (fieldLabelText ftype) errArr
+        $ inputTextForm
+            ftype
+            (not $ null errArr)
+            true
+            inp.value
+            handleChange
+
+  inputNote ::
+    FieldType ->
+    { result :: Maybe (Either ErrorCode String), value :: String | _ } ->
+    (_ -> Action) ->
+    H.ComponentHTML _ _ _
+  inputNote ftype inp handleChange =
+    let
+      errArr = case inp.result of
+        Just (Left e) -> [ errorMsg e ]
+        _ -> []
+    in
+      inputFormContainer ftype (fieldLabelText ftype) errArr
+        $ textAreaForm
+            ftype
+            (not $ null errArr)
+            inp.value
+            handleChange
+
+  handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
+  handleAction = case _ of
+    Receive context -> H.put context
+    Eval action -> F.eval action
+
+  handleQuery :: forall a. FormQuery q a -> H.HalogenM _ _ _ _ _ (Maybe a)
+  handleQuery =
+    F.handleSubmitValidate handleSuccess F.validate
+      { account: isNonEmpty >=> isUnder100
+      , passwd: isNonEmpty >=> isUnder100
+      , note: isUnder1000
+      }
+
+  handleSuccess :: { | FieldOutput } -> H.HalogenM _ _ _ _ _ Unit
+  handleSuccess out = do
+    H.liftEffect $ setHash $ hashStr List
+    F.raise out
+
+  chk :: forall e v. e -> (v -> Boolean) -> v -> Either e v
+  chk e r v = if r v then pure v else Left e
+
+  isNonEmpty = chk ValueMissing $ not Str.null
+
+  isUnder100 = chk OutOfRange $ (_ <= 100) <<< Str.length
+
+  isUnder1000 = chk OutOfRange $ (_ <= 1000) <<< Str.length
+
 data ErrorCode
   = OutOfRange
   | ValueMissing
@@ -71,36 +209,10 @@ derive instance genericErrorReason :: Generic ErrorCode _
 instance showErrorReason :: Show ErrorCode where
   show = genericShow
 
-newtype Form (r :: Row Type -> Type) f
-  = Form
-  ( r
-      ( account :: f (Array ErrorCode) String String
-      , passwd :: f (Array ErrorCode) String String
-      , note :: f (Array ErrorCode) String String
-      )
-  )
-
-derive instance newtypeForm :: Newtype (Form r f) _
-
-formInput :: forall m. Monad m => Maybe FormData -> F.Input' Form m
-formInput fd =
-  { initialInputs: F.wrapInputFields <$> fd
-  , validators:
-      Form
-        { account: isNonEmpty >>> isUnder100
-        , passwd: isNonEmpty >>> isUnder100
-        , note: isUnder1000
-        }
-  }
-  where
-  chk :: forall e v. e -> (v -> Boolean) -> v -> Either (Array e) v
-  chk e r v = if r v then pure v else Left [ e ]
-
-  isNonEmpty = F.hoistFnE_ (chk ValueMissing $ not Str.null)
-
-  isUnder100 = F.hoistFnE_ (\v -> chk OutOfRange (_ <= 100) (Str.length v) *> pure v)
-
-  isUnder1000 = F.hoistFnE_ (\v -> chk OutOfRange (_ <= 1000) (Str.length v) *> pure v)
+errorMsg :: ErrorCode -> String
+errorMsg = case _ of
+  OutOfRange -> "長過ぎます"
+  ValueMissing -> "入力してください"
 
 data FieldType
   = AccountInput
@@ -112,125 +224,8 @@ derive instance genericFieldType :: Generic FieldType _
 instance showFieldType :: Show FieldType where
   show = genericShow
 
-spec :: forall i m. Monad m => MonadAff m => F.Spec' Form FormData i m
-spec =
-  F.defaultSpec
-    { render = render
-    , handleEvent = F.raiseResult
-    }
-  where
-  _account = Proxy :: Proxy "account"
-
-  _passwd = Proxy :: Proxy "passwd"
-
-  _note = Proxy :: Proxy "note"
-
-  errorMsg :: ErrorCode -> String
-  errorMsg = case _ of
-    OutOfRange -> "長過ぎます"
-    ValueMissing -> "入力してください"
-
-  render :: forall st. F.PublicState Form st -> F.ComponentHTML' Form m
-  render fstate =
-    HH.div
-      [ HP.classes $ HH.ClassName <$> [ "container" ] ]
-      [ HH.div
-          [ HP.classes $ HH.ClassName <$> [ "field" ] ]
-          [ labelBlock AccountInput "Title"
-          , inputTextForm AccountInput (F.getError _account fstate.form) (F.getInput _account fstate.form) (F.setValidate _account)
-          , errorDisplay (F.getError _account fstate.form)
-          ]
-      , HH.div
-          [ HP.classes $ HH.ClassName <$> [ "field" ] ]
-          [ labelBlock Passwdinput "The Work"
-          , inputTextForm Passwdinput (F.getError _passwd fstate.form) (F.getInput _passwd fstate.form) (F.setValidate _passwd)
-          , errorDisplay (F.getError _passwd fstate.form)
-          ]
-      , HH.div
-          [ HP.classes $ HH.ClassName <$> [ "field" ] ]
-          [ labelBlock NoteTextarea "Description"
-          , textAreaForm NoteTextarea (F.getError _note fstate.form) (F.getInput _note fstate.form) (F.setValidate _note)
-          , errorDisplay (F.getError _note fstate.form)
-          ]
-      , HH.div
-          [ HP.classes $ HH.ClassName <$> [ "field", "is-grouped" ] ]
-          [ HH.span
-              [ HP.classes $ HH.ClassName <$> [ "control" ] ]
-              [ HH.button
-                  [ HP.classes $ HH.ClassName <$> [ "button", "is-dark" ]
-                  , HE.onClick \_ -> F.submit
-                  ]
-                  [ HH.text "Save" ]
-              ]
-          , HH.span
-              [ HP.classes $ HH.ClassName <$> [ "control" ] ]
-              [ HH.a
-                  [ HP.classes $ HH.ClassName <$> [ "button" ]
-                  , HP.href $ hashStr List
-                  ]
-                  [ HH.text "Cancel" ]
-              ]
-          ]
-      ]
-
-  labelBlock :: forall slot. FieldType -> String -> HH.HTML slot (F.Action' Form)
-  labelBlock fieldType labelTxt =
-    HH.label
-      [ HP.for $ show fieldType
-      , HP.classes $ HH.ClassName <$> [ "label" ]
-      ]
-      [ HH.text labelTxt ]
-
-  inputTextForm ::
-    FieldType ->
-    Maybe (Array ErrorCode) ->
-    String ->
-    (String -> F.Action' Form) ->
-    F.ComponentHTML' Form m
-  inputTextForm fieldType err inp onInput =
-    HH.div
-      [ HP.classes $ HH.ClassName <$> [ "control" ] ]
-      [ HH.input
-          [ HP.type_ HP.InputText
-          , HP.id $ show fieldType
-          , HP.classes $ HH.ClassName
-              <$> [ "input"
-                , if (isJust err) then
-                    "is-danger"
-                  else
-                    ""
-                ]
-          , HP.value inp
-          , HE.onValueInput onInput
-          ]
-      ]
-
-  textAreaForm ::
-    FieldType ->
-    Maybe (Array ErrorCode) ->
-    String ->
-    (String -> F.Action' Form) ->
-    F.ComponentHTML' Form m
-  textAreaForm fieldType err inp onInput =
-    HH.div
-      [ HP.classes $ HH.ClassName <$> [ "control" ] ]
-      [ HH.textarea
-          [ HP.id $ show fieldType
-          , HP.classes $ HH.ClassName
-              <$> [ "textarea"
-                , if (isJust err) then
-                    "is-danger"
-                  else
-                    ""
-                ]
-          , HP.value inp
-          , HE.onValueInput onInput
-          ]
-      ]
-
-  errorDisplay :: forall slot. Maybe (Array ErrorCode) -> HH.HTML slot (F.Action' Form)
-  errorDisplay err =
-    HH.ul
-      [ HP.classes $ HH.ClassName <$> [ "help", "is-danger" ] ]
-      $ (\msg -> HH.li_ [ HH.text (errorMsg msg) ])
-      <$> (fromMaybe [] $ err)
+fieldLabelText :: FieldType -> String
+fieldLabelText = case _ of
+  AccountInput -> "Title"
+  Passwdinput -> "The Work"
+  NoteTextarea -> "Description"
