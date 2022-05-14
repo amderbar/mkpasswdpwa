@@ -2,11 +2,12 @@ module Data.Length
   ( Length
   , fromLength
   , toLength
-  )
-  where
+  , toLengthE
+  ) where
 
 import Prelude
 import Control.Monad.Gen (chooseInt)
+import Data.Either (Either, note)
 import Data.Maybe (Maybe(..))
 import Test.QuickCheck.Arbitrary (class Arbitrary)
 
@@ -22,6 +23,13 @@ toLength i =
       Just l
     else
       Nothing
+
+toLengthE :: forall e. (Int -> Int -> e) -> Int -> Either e Length
+toLengthE f =
+  let
+    err = f (fromLength bottom) (fromLength top)
+  in
+    toLength >>> note err
 
 fromLength :: Length -> Int
 fromLength (Length i) = i

@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "spago bundle-app --minify --to docs/app.js",
+    "build": "spago bundle-app --main Main.SPA --to docs/app.js --minify",
     "cli": "spago run --main Main.CLI",
-    "watch": "spago bundle-app --watch --to docs/app.js",
+    "watch": "npm run build -- --watch",
     "serve": "wds --node-resolve --app-index docs/index.html --root-dir docs --watch",
     "test": "spago test"
   },

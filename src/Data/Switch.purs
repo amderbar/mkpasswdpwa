@@ -1,30 +1,66 @@
 module Data.Switch where
 
 import Prelude
-import Data.Maybe                 (Maybe(..))
-import Data.Tuple                 (Tuple(..), fst, snd, swap)
 
-newtype Switch a = Switch (Tuple Boolean a)
+import Data.Either (Either(..))
+import Data.Generic.Rep (class Generic)
+import Data.Maybe (Maybe(..))
+import Data.Show.Generic (genericShow)
+import Data.Traversable (class Foldable, class Traversable, sequence)
 
-data State = On | Off
+data State = Off | On
+
+derive instance eqState :: Eq State
+
+derive instance ordState :: Ord State
+
+derive instance genericState :: Generic State _
+
+instance showState :: Show State where
+  show = genericShow
+
+toState :: Boolean -> State
+toState b = if b then On else Off
+
+data Switch a = Switch State a
+
+derive instance eqSwitch :: Eq a => Eq (Switch a)
+
+derive instance ordSwitch :: Ord a => Ord (Switch a)
+
+derive instance genericSwitch :: Generic (Switch a) _
+
+instance showSwitch :: Show a => Show (Switch a) where
+  show = genericShow
+
+derive instance functorSwitch :: Functor Switch
+
+instance foldableSwitch :: Foldable Switch where
+  foldr f z (Switch _ x) = x `f` z
+  foldl f z (Switch _ x) = z `f` x
+  foldMap f (Switch _ x) = f x
+
+instance traversableSwitch :: Traversable Switch where
+  traverse f = sequence <<< map f
+  sequence (Switch s ma) = Switch s <$> ma
 
 toSwitch :: forall a. Boolean -> a -> Switch a
-toSwitch s a = Switch (Tuple s a)
+toSwitch s a = Switch (toState s) a
 
 state :: forall a. Switch a -> State
-state s = if isOn s then On else Off
+state (Switch s _) = s
 
 label :: forall a. Switch a -> a
-label (Switch t) = snd t
+label (Switch _ a) = a
 
 isOn :: forall a. Switch a -> Boolean
-isOn (Switch t) = fst t
+isOn s = state s == On
 
 on :: forall a. Switch a -> Switch a
-on (Switch t) = Switch (modifyFst (const true) t)
+on (Switch _ a) = Switch On a
 
 off :: forall a. Switch a -> Switch a
-off (Switch t) = Switch (modifyFst (const false) t)
+off (Switch _ a) = Switch Off a
 
 toggle :: forall a. Switch a -> Switch a
 toggle s = if isOn s then off s else on s
@@ -32,20 +68,7 @@ toggle s = if isOn s then off s else on s
 toMaybe :: Switch ~> Maybe
 toMaybe s = if isOn s then Just (label s) else Nothing
 
-derive instance eqSwitch  :: Eq  a => Eq  (Switch a)
-derive instance ordSwitch :: Ord a => Ord (Switch a)
-
-instance showSwitch :: Show a => Show (Switch a) where
-    show (Switch (Tuple true  a)) = "on ("  <> show a <> ")"
-    show (Switch (Tuple false a)) = "off (" <> show a <> ")"
-
-derive newtype instance functorSwitch :: Functor Switch
-
-
--- Tuple Utils
-
-updateFst :: forall a b c. b -> Tuple a c -> Tuple b c
-updateFst n = modifyFst (const n)
-
-modifyFst :: forall a b c. (a -> b) -> Tuple a c -> Tuple b c
-modifyFst f = swap >>> map f >>> swap
+fromEither :: forall a. Either a a -> Switch a
+fromEither = case _ of
+  Right a -> Switch On a
+  Left a -> Switch Off a

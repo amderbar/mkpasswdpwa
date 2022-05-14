@@ -1,9 +1,9 @@
 module Data.Policy where
 
-import Data.Array.NonEmpty (NonEmptyArray, fromArray, toArray)
-import Data.Char.Symbols (SymbolChar, symbols)
-import Data.Count (Count, toCount)
-import Data.Length (Length, toLength)
+import Data.Array.NonEmpty (NonEmptyArray)
+import Data.Char.Symbols (SymbolChar)
+import Data.Count (Count)
+import Data.Length (Length)
 import Data.Maybe (Maybe)
 
 type CharTypeConf char

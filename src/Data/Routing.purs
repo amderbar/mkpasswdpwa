@@ -1,4 +1,4 @@
-module Mkpasswd.Data.Routing
+module Data.Routing
   ( RouteHash(..)
   , hashStr
   , menuHash

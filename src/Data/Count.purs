@@ -2,11 +2,12 @@ module Data.Count
   ( Count
   , fromCount
   , toCount
-  )
-  where
+  , toCountE
+  ) where
 
 import Prelude
 import Control.Monad.Gen (chooseInt)
+import Data.Either (Either, note)
 import Data.Maybe (Maybe(..))
 import Test.QuickCheck.Arbitrary (class Arbitrary)
 
@@ -22,6 +23,13 @@ toCount i =
       Just l
     else
       Nothing
+
+toCountE :: forall e. (Int -> Int -> e) -> Int -> Either e Count
+toCountE f =
+  let
+    err = f (fromCount bottom) (fromCount top)
+  in
+    toCount >>> note err
 
 fromCount :: Count -> Int
 fromCount (Count i) = i

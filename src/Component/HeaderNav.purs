@@ -1,7 +1,7 @@
-module Mkpasswd.Component.HeaderNav where
+module Component.HeaderNav where
 
 import Prelude
-import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
+import Data.Routing (RouteHash(..), hashStr)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
