@@ -1,4 +1,4 @@
-module Mkpasswd.Page.List where
+module Page.List where
 
 import Prelude
 import Data.Array (mapWithIndex, null, catMaybes)
@@ -9,9 +9,9 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Mkpasswd.Data.States (FormData)
-import Mkpasswd.Component.HeaderNav as Nav
-import Mkpasswd.Data.Routing (RouteHash(..), hashStr)
+import Data.States (FormData)
+import Component.HeaderNav as Nav
+import Data.Routing (RouteHash(..), hashStr)
 import Web.HTML as Web
 import Web.HTML.Window as Win
 

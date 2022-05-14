@@ -1,4 +1,4 @@
-module Mkpasswd.Data.States where
+module Data.States where
 
 type FormData
   = { account :: String
