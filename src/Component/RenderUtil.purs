@@ -43,6 +43,31 @@ labelBlock fieldType labelText =
     ]
     [ HH.text labelText ]
 
+inputTextForm ::
+  forall id slot action.
+  Show id =>
+  id ->
+  Boolean ->
+  Boolean ->
+  String ->
+  (String -> action) ->
+  HH.HTML slot action
+inputTextForm fieldId hasErr enabled inp onInput =
+  HH.div
+    [ classes [ "control", "is-expanded" ] ]
+    [ HH.input
+        [ HP.type_ HP.InputText
+        , HP.id $ show fieldId
+        , classes
+            [ "input"
+            , if hasErr then "is-danger" else ""
+            ]
+        , HP.value inp
+        , HE.onValueInput onInput
+        , HP.disabled (not enabled)
+        ]
+    ]
+
 inputNumberForm ::
   forall id slot action.
   Show id =>

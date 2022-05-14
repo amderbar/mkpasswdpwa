@@ -5,10 +5,10 @@ module Page.Mkpasswd
 
 import Prelude
 import Component.HeaderNav as Nav
-import Component.RenderUtil (footerBtnArea, inputNumberForm, resultModal, inputAddon, inputFormContainer)
+import Component.RenderUtil (classes, footerBtnArea, inputAddon, inputFormContainer, inputNumberForm, inputTextForm, resultModal)
 import Data.Array (null, singleton)
 import Data.Array.NonEmpty (NonEmptyArray, toArray)
-import Data.Char.Symbols (symbols)
+import Data.Char.Symbols (SymbolChar, symbols, toNonEmptySymbolCharArrray)
 import Data.Count (Count, toCountE)
 import Data.Either (Either(..), note)
 import Data.Generic.Rep (class Generic)
@@ -27,7 +27,6 @@ import Effect.Console (logShow) as Console
 import Formless as F
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Properties as HP
 import Test.QuickCheck.Gen (Gen, randomSampleOne)
 import Type.Proxy (Proxy(..))
 
@@ -49,6 +48,7 @@ type Form (f :: Type -> Type -> Type -> Type)
     , lowercaseCount :: f String ErrorCode Count
     , symbolIsOn :: f Boolean Void Boolean
     , symbolCount :: f String ErrorCode Count
+    , symbolSet :: f String ErrorCode (NonEmptyArray SymbolChar)
     )
 
 type FieldState
@@ -113,6 +113,7 @@ component =
     , lowercaseCount: show 2
     , symbolIsOn: true
     , symbolCount: show 1
+    , symbolSet: fromCharArray $ toArray (unwrap <$> symbols)
     }
 
   innerComponent :: H.Component (FormQuery q) FormContext FormOutput m
@@ -132,7 +133,7 @@ component =
   render :: State -> H.ComponentHTML _ _ _
   render state =
     HH.main
-      [ HP.classes $ HH.ClassName <$> [ if isJust state.passwd then "is-clipped" else "" ] ]
+      [ classes [ if isJust state.passwd then "is-clipped" else "" ] ]
       [ HH.slot _headerNav unit Nav.component unit absurd
       , formArea state.formCtx
       , footerBtnArea (const Generate)
@@ -147,9 +148,9 @@ component =
   formArea :: FormContext -> H.ComponentHTML _ _ _
   formArea { fields, actions } =
     HH.section
-      [ HP.classes $ HH.ClassName <$> [ "section" ] ]
+      [ classes [ "section" ] ]
       [ HH.div
-          [ HP.classes $ HH.ClassName <$> [ "container" ] ]
+          [ classes [ "container" ] ]
           [ inputLength PasswdLength fields.length actions.length.handleChange
           , inputCountSwitch
               DigitCharNum
@@ -167,6 +168,7 @@ component =
               SymbolCharNum
               { isOn: fields.symbolIsOn, count: fields.symbolCount }
               { isOn: actions.symbolIsOn.handleChange, count: actions.symbolCount.handleChange }
+          , inputSymbolCharSet SymbolCharSet fields.symbolSet actions.symbolSet.handleChange
           ]
       ]
 
@@ -202,7 +204,7 @@ component =
     in
       inputFormContainer ftype (fieldLabelText ftype) errArr
         $ HH.div
-            [ HP.classes $ HH.ClassName <$> [ "field", "has-addons" ] ]
+            [ classes [ "field", "has-addons" ] ]
             [ inputAddon
                 isOn.value
                 handleChange.isOn
@@ -213,6 +215,20 @@ component =
                 count.value
                 handleChange.count
             ]
+
+  inputSymbolCharSet ftype charset handleChange =
+    let
+      errArr = case charset.result of
+        Just (Left e) -> [ errorMsg e ]
+        _ -> []
+    in
+      inputFormContainer ftype (fieldLabelText ftype) errArr
+        $ inputTextForm
+            ftype
+            (not $ null errArr)
+            true
+            charset.value
+            handleChange
 
   handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
   handleAction = case _ of
@@ -241,6 +257,7 @@ component =
       , capitalCount: validateCount
       , symbolIsOn: Right
       , symbolCount: validateCount
+      , symbolSet: validateSymbolCharSet
       }
     where
     handleSuccess :: { | FieldOutput } -> H.HalogenM _ _ _ _ _ Unit
@@ -262,11 +279,12 @@ decodeFormInput f = ado
   capitalCount <- joinResult singleton f.capitalCount.result
   symbolIsOn <- joinResult (\_ -> []) f.symbolIsOn.result
   symbolCount <- joinResult singleton f.symbolCount.result
+  symbolSet <- joinResult singleton f.symbolSet.result
   in { length
   , digitNum: meybeIf digitIsOn digitCount
   , lowercaseNum: meybeIf lowercaseIsOn lowercaseCount
   , capitalNum: meybeIf capitalIsOn capitalCount
-  , symbolNum: { count: _, charset: symbols } <$> meybeIf symbolIsOn symbolCount
+  , symbolNum: { count: _, charset: symbolSet } <$> meybeIf symbolIsOn symbolCount
   }
   where
   meybeIf p = toMaybe <<< toSwitch p
@@ -290,12 +308,16 @@ validateLength = fromStringE >=> (toLengthE OutOfRange)
 validateCount :: String -> Either ErrorCode Count
 validateCount = fromStringE >=> (toCountE OutOfRange)
 
+validateSymbolCharSet :: String -> Either ErrorCode (NonEmptyArray SymbolChar)
+validateSymbolCharSet = toNonEmptySymbolCharArrray >>> mapLeft \_ -> ValueMissing
+
 data FieldType
   = PasswdLength
   | DigitCharNum
   | AlphaUppercaseNum
   | AlphaLowercaseNum
   | SymbolCharNum
+  | SymbolCharSet
 
 derive instance eqFieldType :: Eq FieldType
 
@@ -313,6 +335,7 @@ fieldLabelText = case _ of
   AlphaUppercaseNum -> "Uppercase Alphabet"
   AlphaLowercaseNum -> "Lowercase Alphabet"
   SymbolCharNum -> "Symbol"
+  SymbolCharSet -> "Available Symbols"
 
 data ErrorCode
   = OutOfRange Int Int
