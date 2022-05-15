@@ -237,7 +237,6 @@ component =
     Clear -> H.modify_ _ { passwd = Nothing }
     Generate -> do
       inp <- H.gets _.formCtx.fields
-      H.liftEffect $ Console.logShow inp
       case decodeGen inp of
         Right gen -> do
           newPasswd <- H.liftEffect $ randomSampleOne gen

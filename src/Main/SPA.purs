@@ -2,8 +2,10 @@ module Main.SPA (main) where
 
 import Prelude
 import Data.Maybe (Maybe(..))
+import Data.Newtype (unwrap)
 import Data.Passwd (Passwd)
 import Data.Routing (RouteHash(..), menuHash)
+import Data.States (initialForm)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Aff.Class (class MonadAff)
@@ -36,7 +38,9 @@ main =
       $ H.mkTell (ChangeHash new)
 
 type State
-  = { route :: RouteHash }
+  = { route :: RouteHash
+    , session :: Maybe Passwd
+    }
 
 data Action
   = Mkpasswd (Maybe Passwd)
@@ -66,18 +70,22 @@ rootComponent =
     , eval: H.mkEval $ H.defaultEval { handleAction = handleAction, handleQuery = handleQuery }
     }
   where
-  initialState _ = { route: Index }
+  initialState _ = { route: Index, session: Nothing }
 
   render :: State -> H.ComponentHTML _ _ _
-  render { route } = case route of
+  render { route, session } = case route of
     Index -> HH.slot _mkpasswdPage unit MkpasswdPage.component unit Mkpasswd
     List -> HH.slot _listPage unit ListPage.component [] Delete
-    New -> HH.slot _storePage unit StorePage.component Nothing Save
-    Store _ -> HH.slot _storePage unit StorePage.component Nothing Save
+    New ->
+      let
+        initialValues = initialForm { passwd = _ } <<< unwrap <$> session
+      in
+        HH.slot _storePage unit (StorePage.component initialValues) unit Save
+    Store _ -> HH.slot _storePage unit (StorePage.component Nothing) unit Save
 
   handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
   handleAction = case _ of
-    Mkpasswd _ -> pure unit
+    Mkpasswd p -> H.modify_ _ { session = p }
     Save _ -> pure unit
     Delete _ -> pure unit
 

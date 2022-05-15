@@ -6,10 +6,10 @@ import Component.RenderUtil (classes, inputFormContainer, inputTextForm, textAre
 import Data.Array (null)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Routing (RouteHash(..), hashStr)
 import Data.Show.Generic (genericShow)
-import Data.States (FormData)
+import Data.States (FormData, initialForm)
 import Data.String as Str
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
@@ -62,7 +62,7 @@ type State
   = FormContext
 
 type Input
-  = Maybe FormData
+  = Unit
 
 type Output
   = FormData
@@ -71,20 +71,16 @@ data Action
   = Receive FormContext
   | Eval (F.FormlessAction FieldState)
 
-component :: forall q m. MonadAff m => H.Component q Input Output m
-component =
-  (\c -> F.formless c initialValues innerComponent)
-    { liftAction: Eval
-    , validateOnChange: true
-    }
+component :: forall q m. MonadAff m => Maybe { | FieldInput } -> H.Component q Input Output m
+component initialValues =
+  let
+    iniVal = fromMaybe initialForm initialValues
+  in
+    (\c -> F.formless c iniVal innerComponent)
+      { liftAction: Eval
+      , validateOnChange: true
+      }
   where
-  initialValues :: { | Form F.FieldInput }
-  initialValues =
-    { account: ""
-    , passwd: ""
-    , note: ""
-    }
-
   innerComponent :: H.Component (FormQuery q) FormContext FormOutput m
   innerComponent =
     H.mkComponent
