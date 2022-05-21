@@ -4,7 +4,7 @@ import Prelude
 import Data.Either (Either, note)
 import Effect (Effect)
 import Foreign (MultipleErrors, ForeignError(..))
-import Simple.JSON as JSON
+import Yoga.JSON as JSON
 import Web.HTML as WH
 import Web.HTML.Window as WW
 import Web.Storage.Storage as WS

@@ -1,23 +1,13 @@
 module Data.Routing
   ( RouteHash(..)
+  , forcusIdx
   , hashStr
   , menuHash
-  )
-  where
+  ) where
 
-import Prelude
-  ( class Eq
-  , class Show
-  , show
-  , pure
-  , (<>)
-  , (<<<)
-  , (<*)
-  , (*>)
-  , (<$>)
-  , (<$)
-  )
 import Data.Foldable (oneOf)
+import Data.Maybe (Maybe(..))
+import Prelude (class Eq, class Show, show, pure, (<>), (<<<), (<*), (*>), (<$>), (<$))
 import Routing.Match (Match, lit, int, end)
 
 data RouteHash
@@ -47,3 +37,8 @@ menuHash =
     , pure Index
     ]
     <* end
+
+forcusIdx :: RouteHash -> Maybe Int
+forcusIdx = case _ of
+  Store i -> Just i
+  _ -> Nothing

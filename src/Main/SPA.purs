@@ -1,14 +1,18 @@
 module Main.SPA (main) where
 
 import Prelude
-import Data.Maybe (Maybe(..))
+import Data.Array (deleteAt, snoc, updateAt, (!!))
+import Data.Either (Either(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Passwd (Passwd)
-import Data.Routing (RouteHash(..), menuHash)
-import Data.States (initialForm)
+import Data.Routing (RouteHash(..), forcusIdx, menuHash)
+import Data.States (FormData, initialForm)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Console (logShow) as Console
+import Effect.Storage (fetch, save)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -40,10 +44,12 @@ main =
 type State
   = { route :: RouteHash
     , session :: Maybe Passwd
+    , storage :: Array FormData
     }
 
 data Action
-  = Mkpasswd (Maybe Passwd)
+  = Load
+  | Mkpasswd (Maybe Passwd)
   | Save StorePage.Output
   | Delete ListPage.DeleteTargetIdx
 
@@ -67,31 +73,60 @@ rootComponent =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction, handleQuery = handleQuery }
+    , eval:
+        H.mkEval
+          $ H.defaultEval
+              { handleAction = handleAction
+              , handleQuery = handleQuery
+              , initialize = Just Load
+              }
     }
   where
-  initialState _ = { route: Index, session: Nothing }
+  initialState _ = { route: Index, session: Nothing, storage: [] }
 
   render :: State -> H.ComponentHTML _ _ _
-  render { route, session } = case route of
+  render { route, session, storage } = case route of
     Index -> HH.slot _mkpasswdPage unit MkpasswdPage.component unit Mkpasswd
-    List -> HH.slot _listPage unit ListPage.component [] Delete
+    List -> HH.slot _listPage unit ListPage.component storage Delete
     New ->
       let
         initialValues = initialForm { passwd = _ } <<< unwrap <$> session
       in
         HH.slot _storePage unit (StorePage.component initialValues) unit Save
-    Store _ -> HH.slot _storePage unit (StorePage.component Nothing) unit Save
+    Store i -> HH.slot _storePage unit (StorePage.component $ storage !! i) unit Save
+
+  wsKey :: String
+  wsKey = "mkpasswd"
 
   handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
   handleAction = case _ of
+    Load -> do
+      ns <- H.liftEffect $ fetch wsKey
+      case ns of
+        Right fd -> H.modify_ _ { storage = (fd :: Array FormData) }
+        Left er -> H.liftEffect $ Console.logShow er
     Mkpasswd p -> H.modify_ _ { session = p }
-    Save _ -> pure unit
-    Delete _ -> pure unit
+    Save fd -> do
+      r <- H.gets _.route
+      s <- H.gets _.storage
+      let
+        st = fromMaybe (snoc s fd) $ (\i -> updateAt i fd s) =<< forcusIdx r
+      H.modify_ _ { storage = st }
+      H.liftEffect $ save wsKey st
+    Delete i -> do
+      s <- H.gets _.storage
+      let
+        newSt = deleteAt i s
+      case newSt of
+        Nothing -> pure unit
+        Just st -> do
+          H.modify_ _ { storage = st }
+          H.liftEffect $ save wsKey st
 
   handleQuery :: forall u. Query u -> H.HalogenM _ _ _ _ _ (Maybe u)
   handleQuery = case _ of
     ChangeHash route a -> do
       mRoute <- H.gets _.route
       when (mRoute /= route) $ H.modify_ _ { route = route }
+      when (route == List) $ H.modify_ (_ { session = Nothing })
       pure (Just a)
