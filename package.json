@@ -14,7 +14,7 @@
   "license": "MIT",
   "devDependencies": {
     "@web/dev-server": "^0.1.17",
-    "esbuild": "^0.14.38",
+    "esbuild": "^0.17.5",
     "purescript": "^0.15.0",
     "purty": "^7.0.0",
     "spago": "^0.20.3"
