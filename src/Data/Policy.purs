@@ -1,20 +1,38 @@
 module Data.Policy where
 
-import Data.Array.NonEmpty (NonEmptyArray)
-import Data.Char.Symbols (SymbolChar)
-import Data.Count (Count)
-import Data.Length (Length)
-import Data.Maybe (Maybe)
+import Prelude
 
-type CharTypeConf char
+import Data.Array.NonEmpty (NonEmptyArray, fromArray)
+import Data.Char.GenSource (GenSrcExists, digits, lowercases, mkGenSource, uppercases)
+import Data.Char.Subset (symbols)
+import Data.Count (Count, toCount)
+import Data.Length (Length, toLength)
+import Data.Maybe (Maybe, fromJust)
+import Partial.Unsafe (unsafePartial)
+
+type CharTypeConf
   = { count :: Count
-    , charset :: NonEmptyArray char
+    , genSrc :: GenSrcExists
     }
 
 type Policy
   = { length :: Length
-    , digitNum :: Maybe Count
-    , lowercaseNum :: Maybe Count
-    , capitalNum :: Maybe Count
-    , symbolNum :: Maybe (CharTypeConf SymbolChar)
+    , required :: NonEmptyArray CharTypeConf
     }
+
+mkPolicy :: Length -> Array CharTypeConf -> Maybe Policy
+mkPolicy length confs = { length, required: _ } <$> fromArray confs
+
+defaultPolicy :: Policy
+defaultPolicy = unsafePartial $ fromJust $ do
+  len <- toLength 9
+  digitsCnt <- toCount 2
+  uppercasesCnt <- toCount 2
+  lowercasesCnt <- toCount 2
+  symbolsCnt <- toCount 1
+  mkPolicy len
+    [ { count: digitsCnt, genSrc: digits }
+    , { count: uppercasesCnt, genSrc: uppercases }
+    , { count: lowercasesCnt, genSrc: lowercases }
+    , { count: symbolsCnt, genSrc: mkGenSource symbols }
+    ]

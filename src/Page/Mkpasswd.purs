@@ -4,11 +4,13 @@ module Page.Mkpasswd
   ) where
 
 import Prelude
+
 import Component.HeaderNav as Nav
 import Component.RenderUtil (classes, footerBtnArea, inputAddon, inputFormContainer, inputNumberForm, inputTextForm, resultModal)
-import Data.Array (null, singleton)
+import Data.Array (catMaybes, null, singleton)
 import Data.Array.NonEmpty (NonEmptyArray, toArray)
-import Data.Char.Symbols (SymbolChar, symbols, toNonEmptySymbolCharArrray)
+import Data.Char.Subset (SymbolChar, symbols, toNonEmptySymbolCharArrray)
+import Data.Char.GenSource (digits, lowercases, mkGenSource, uppercases)
 import Data.Count (Count, toCountE)
 import Data.Either (Either(..), note)
 import Data.Generic.Rep (class Generic)
@@ -18,7 +20,7 @@ import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (unwrap)
 import Data.Passwd (Passwd)
 import Data.Passwd.Gen (genPasswd)
-import Data.Policy (Policy)
+import Data.Policy (Policy, mkPolicy)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (fromCharArray)
 import Data.Switch (toMaybe, toSwitch)
@@ -263,12 +265,10 @@ component =
     handleSuccess = void <<< pure
 
 decodeGen :: { | FieldState } -> Either (Array ErrorCode) (Gen Passwd)
-decodeGen inp = do
-  policy <- decodeFormInput inp
-  mapLeft (\_ -> [ EmptyCharSet ]) (genPasswd policy)
+decodeGen inp = genPasswd <$> decodeFormInput inp
 
 decodeFormInput :: { | FieldState } -> Either (Array ErrorCode) Policy
-decodeFormInput f = ado
+decodeFormInput f = do
   length <- joinResult singleton f.length.result
   digitIsOn <- joinResult (\_ -> []) f.digitIsOn.result
   digitCount <- joinResult singleton f.digitCount.result
@@ -279,12 +279,14 @@ decodeFormInput f = ado
   symbolIsOn <- joinResult (\_ -> []) f.symbolIsOn.result
   symbolCount <- joinResult singleton f.symbolCount.result
   symbolSet <- joinResult singleton f.symbolSet.result
-  in { length
-  , digitNum: meybeIf digitIsOn digitCount
-  , lowercaseNum: meybeIf lowercaseIsOn lowercaseCount
-  , capitalNum: meybeIf capitalIsOn capitalCount
-  , symbolNum: { count: _, charset: symbolSet } <$> meybeIf symbolIsOn symbolCount
-  }
+  let confs =
+        catMaybes
+          [ meybeIf digitIsOn digitCount <#> { count: _, genSrc: digits }
+          , meybeIf capitalIsOn capitalCount <#> { count: _, genSrc: uppercases }
+          , meybeIf lowercaseIsOn lowercaseCount <#> { count: _, genSrc: lowercases }
+          , meybeIf symbolIsOn symbolCount <#> { count: _, genSrc: mkGenSource symbolSet }
+          ]
+  joinResult singleton $ Just (note EmptyCharSet $ mkPolicy length confs)
   where
   meybeIf p = toMaybe <<< toSwitch p
 
