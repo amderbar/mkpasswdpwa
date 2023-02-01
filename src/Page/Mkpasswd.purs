@@ -7,14 +7,16 @@ import Prelude
 
 import Component.HeaderNav as Nav
 import Component.RenderUtil (classes, footerBtnArea, inputAddon, inputFormContainer, inputNumberForm, inputTextForm, resultModal)
+import Control.Monad.Error.Class (liftMaybe)
 import Data.Array (catMaybes, null, singleton)
-import Data.Array.NonEmpty (NonEmptyArray, toArray)
-import Data.Char.Subset (SymbolChar, symbols, toNonEmptySymbolCharArrray)
+import Data.Array.NonEmpty (NonEmptyArray, fromArray, toArray)
 import Data.Char.GenSource (digits, lowercases, mkGenSource, uppercases)
+import Data.Char.Subset (SymbolChar, symbols, toString)
+import Data.Char.Subset (fromString) as SubsetChar
 import Data.Count (Count, toCountE)
 import Data.Either (Either(..), note)
 import Data.Generic.Rep (class Generic)
-import Data.Int (fromString)
+import Data.Int (fromString) as Int
 import Data.Length (Length, toLengthE)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (unwrap)
@@ -22,7 +24,6 @@ import Data.Passwd (Passwd)
 import Data.Passwd.Gen (genPasswd)
 import Data.Policy (Policy, mkPolicy)
 import Data.Show.Generic (genericShow)
-import Data.String.CodeUnits (fromCharArray)
 import Data.Switch (toMaybe, toSwitch)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (logShow) as Console
@@ -115,7 +116,7 @@ component =
     , lowercaseCount: show 2
     , symbolIsOn: true
     , symbolCount: show 1
-    , symbolSet: fromCharArray $ toArray (unwrap <$> symbols)
+    , symbolSet: toString $ toArray symbols
     }
 
   innerComponent :: H.Component (FormQuery q) FormContext FormOutput m
@@ -301,7 +302,7 @@ joinResult f = case _ of
   Nothing -> Left []
 
 fromStringE :: String -> Either ErrorCode Int
-fromStringE = fromString >>> note TypeMismatch
+fromStringE = Int.fromString >>> note TypeMismatch
 
 validateLength :: String -> Either ErrorCode Length
 validateLength = fromStringE >=> (toLengthE OutOfRange)
@@ -310,7 +311,7 @@ validateCount :: String -> Either ErrorCode Count
 validateCount = fromStringE >=> (toCountE OutOfRange)
 
 validateSymbolCharSet :: String -> Either ErrorCode (NonEmptyArray SymbolChar)
-validateSymbolCharSet = toNonEmptySymbolCharArrray >>> mapLeft \_ -> ValueMissing
+validateSymbolCharSet = SubsetChar.fromString (const TypeMismatch) >=> (liftMaybe ValueMissing <<< fromArray)
 
 data FieldType
   = PasswdLength

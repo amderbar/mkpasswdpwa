@@ -29,6 +29,7 @@ You can edit this file as you like.
   , "spec"
   , "spec-quickcheck"
   , "strings"
+  , "transformers"
   , "tuples"
   , "web-html"
   , "web-storage"

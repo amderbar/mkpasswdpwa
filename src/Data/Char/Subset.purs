@@ -5,6 +5,6 @@ module Data.Char.Subset
   )
   where
 
-import Data.Char.Subset.Class (class SubsetChar, fromChar, fromString, toChar)
+import Data.Char.Subset.Class (class SubsetChar, fromChar, fromString, toChar, toString)
 import Data.Char.Subset.Hiragana (Hiragana(..), hiragana, toHiragana)
-import Data.Char.Subset.SymbolChar (SymbolChar(..), symbols, toNonEmptySymbolCharArrray, toSymbolChar)
+import Data.Char.Subset.SymbolChar (SymbolChar(..), symbols, toSymbolChar)

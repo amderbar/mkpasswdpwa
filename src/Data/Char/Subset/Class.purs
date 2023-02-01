@@ -2,17 +2,20 @@ module Data.Char.Subset.Class where
 
 import Prelude
 
-import Data.Array.NonEmpty (NonEmptyArray)
-import Data.Maybe (Maybe(..))
-import Data.String.NonEmpty (fromString) as Str
-import Data.String.NonEmpty.CodeUnits (toNonEmptyCharArray)
+import Control.Monad.Error.Class (class MonadError)
+import Data.String.CodeUnits (fromCharArray, toCharArray)
+import Data.Traversable (traverse)
 
 class SubsetChar char where
-  fromChar :: Char -> Maybe char
+  fromChar :: forall e m. MonadError e m => e -> Char -> m char
   toChar :: char -> Char
-  fromString :: String -> Maybe (NonEmptyArray char)
 
 instance subsetCharChar :: SubsetChar Char where
-  fromChar = Just
+  fromChar _ = pure
   toChar = identity
-  fromString = Str.fromString >>> (map toNonEmptyCharArray)
+
+fromString :: forall e m c. MonadError e m => SubsetChar c => (Char -> e) -> String -> m (Array c)
+fromString e = toCharArray >>> traverse \c -> fromChar (e c) c
+
+toString :: forall c. SubsetChar c => Array c -> String
+toString = (map toChar) >>> fromCharArray
