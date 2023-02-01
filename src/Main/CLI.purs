@@ -5,7 +5,7 @@ import Prelude
 import ArgParse.Basic (ArgParser, argument, choose, default, flagHelp, fromRecord, int, parseArgs, printArgError, unfolded1, unformat)
 import Data.Array (drop)
 import Data.Char.GenSource (digits, lowercases, mkGenSource, uppercases)
-import Data.Char.Subset (symbols)
+import Data.Char.Subset (hiragana, symbols)
 import Data.Count (Count, fromCount, toCount)
 import Data.Either (Either(..), note)
 import Data.Length (Length, fromLength, toLength)
@@ -55,12 +55,18 @@ policyArg =
         # int
         # countArg
 
+    hiraganaNum =
+      argument [ "--hiragana", "-h" ] "Minimum number of hiragana to include."
+        # int
+        # countArg
+
     charTypeConf =
       choose "required charactor types"
         [ digitNumArg <#> { count: _, genSrc: digits }
         , lowercaseNum <#> { count: _, genSrc: lowercases }
         , capitalNum <#> { count: _, genSrc: uppercases }
         , symbolNum <#> { count: _, genSrc: mkGenSource symbols }
+        , hiraganaNum <#> { count: _, genSrc: mkGenSource hiragana }
         ]
   in
     fromRecord

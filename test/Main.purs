@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Array.NonEmpty (singleton)
 import Data.Char.GenSource (digits, lowercases, members, mkGenSource, uppercases)
-import Data.Char.Subset (symbols)
+import Data.Char.Subset (hiragana, symbols)
 import Data.Count (fromCount)
 import Data.Foldable (elem, sum)
 import Data.Length (fromLength)
@@ -59,6 +59,13 @@ spec = do
     it "should contain more symbols than specified in the policy" do
       quickCheck do
         c <- arbitrary <#> { count: _, genSrc: mkGenSource symbols }
+        p <- arbitrary <#> { length: _, required: singleton c }
+        (Passwd r) <- genPasswd p
+        pure $ countCharType c r >=? fromCount c.count
+
+    it "should contain more hiragana than specified in the policy" do
+      quickCheck do
+        c <- arbitrary <#> { count: _, genSrc: mkGenSource hiragana }
         p <- arbitrary <#> { length: _, required: singleton c }
         (Passwd r) <- genPasswd p
         pure $ countCharType c r >=? fromCount c.count
