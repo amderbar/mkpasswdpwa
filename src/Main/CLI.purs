@@ -2,15 +2,19 @@ module Main.CLI (main) where
 
 import Prelude
 
-import ArgParse.Basic (ArgParser, argument, choose, default, flagHelp, fromRecord, int, parseArgs, printArgError, unfolded1, unformat)
+import ArgParse.Basic (ArgParser, argument, choose, default, flagHelp, fromRecord, int, parseArgs, printArgError, separated, unfolded1, unformat)
 import Data.Array (drop)
+import Data.Array.NonEmpty (NonEmptyArray, fromArray)
 import Data.Char.GenSource (digits, lowercases, mkGenSource, uppercases)
-import Data.Char.Subset (hiragana, symbols)
-import Data.Count (Count, fromCount, toCount)
+import Data.Char.Subset (SymbolChar, hiragana, symbols)
+import Data.Char.Subset (fromString) as SubsetChar
+import Data.Count (Count, toCountE)
 import Data.Either (Either(..), note)
-import Data.Length (Length, fromLength, toLength)
+import Data.Int (fromString) as Int
+import Data.Length (Length, toLengthE)
 import Data.Passwd.Gen (genPasswd)
 import Data.Policy (Policy, defaultPolicy)
+import Data.String (Pattern(..))
 import Effect (Effect)
 import Effect.Console (log, logShow)
 import Node.Process (argv) as Process
@@ -50,13 +54,21 @@ policyArg =
         # int
         # countArg
 
-    symbolNum =
+    symbolCharType =
       argument [ "--symbol", "-s" ] "Minimum number of symbols to include."
-        # int
-        # countArg
+        # separated "INTEGER [SYMBOLS]" (Pattern " ")
+        # unformat "INTEGER and [SYMBOLS]" case _ of
+          [cnt] -> do
+            c <- cnt # strToCountE
+            pure { count: c, genSrc: mkGenSource symbols }
+          [cnt, str] -> do
+            c <- cnt # strToCountE
+            s <- str # (SubsetChar.fromString (show >>> append "Invalid Symbol:") >=> fromArray >>> note "Expected NonEmpty SYMBOLS")
+            pure { count: c, genSrc: mkGenSource (s :: NonEmptyArray SymbolChar) }
+          _ -> Left "Expected INTEGER and SYMBOLS"
 
     hiraganaNum =
-      argument [ "--hiragana", "-h" ] "Minimum number of hiragana to include."
+      argument [ "--hiragana" ] "Minimum number of hiragana to include."
         # int
         # countArg
 
@@ -65,7 +77,7 @@ policyArg =
         [ digitNumArg <#> { count: _, genSrc: digits }
         , lowercaseNum <#> { count: _, genSrc: lowercases }
         , capitalNum <#> { count: _, genSrc: uppercases }
-        , symbolNum <#> { count: _, genSrc: mkGenSource symbols }
+        , symbolCharType
         , hiraganaNum <#> { count: _, genSrc: mkGenSource hiragana }
         ]
   in
@@ -75,27 +87,19 @@ policyArg =
             # int
             # lengthArg
             # default defaultPolicy.length
-      , required: unfolded1 charTypeConf # default defaultPolicy.required
+      , required:
+          unfolded1 charTypeConf
+            # default defaultPolicy.required
       }
 
 lengthArg :: ArgParser Int -> ArgParser Length
-lengthArg = unformat "INT" (note msg <<< toLength)
-  where
-  msg =
-    let
-      b = fromLength bottom
-
-      t = fromLength top
-    in
-      "Expected INT between " <> (show b) <> " to " <> (show t)
+lengthArg = unformat "INTEGER" (toLengthE boundedIntErrorMsg)
 
 countArg :: ArgParser Int -> ArgParser Count
-countArg = unformat "INT" (note msg <<< toCount)
-  where
-  msg =
-    let
-      b = fromCount bottom
+countArg = unformat "INTEGER" (toCountE boundedIntErrorMsg)
 
-      t = fromCount top
-    in
-      "Expected INT between " <> (show b) <> " to " <> (show t)
+strToCountE :: String -> Either String Count
+strToCountE = Int.fromString >>> note "Expected INTEGER" >=> toCountE boundedIntErrorMsg
+
+boundedIntErrorMsg :: Int -> Int -> String
+boundedIntErrorMsg b t = "Expected INTEGER between " <> (show b) <> " to " <> (show t)
