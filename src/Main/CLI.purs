@@ -15,6 +15,7 @@ import Data.Length (Length, toLengthE)
 import Data.Passwd.Gen (genPasswd)
 import Data.Policy (Policy, defaultPolicy)
 import Data.String (Pattern(..))
+import Data.String.NonEmpty (fromString) as NES
 import Effect (Effect)
 import Effect.Console (log, logShow)
 import Node.Process (argv) as Process
@@ -72,6 +73,16 @@ policyArg =
         # int
         # countArg
 
+    customCharType =
+      argument [ "--custom" ] "Custom Charactor set."
+        # separated "INTEGER STRING" (Pattern " ")
+        # unformat "INTEGER and NonEmpty STRING" case _ of
+          [cnt, str] -> do
+            c <- cnt # strToCountE
+            s <- str # NES.fromString >>> note "Expected NonEmpty STRING"
+            pure { count: c, genSrc: mkGenSource s }
+          _ -> Left "Expected INTEGER and NonEmpty STRING"
+
     charTypeConf =
       choose "required charactor types"
         [ digitNumArg <#> { count: _, genSrc: digits }
@@ -79,6 +90,7 @@ policyArg =
         , capitalNum <#> { count: _, genSrc: uppercases }
         , symbolCharType
         , hiraganaNum <#> { count: _, genSrc: mkGenSource hiragana }
+        , customCharType
         ]
   in
     fromRecord
