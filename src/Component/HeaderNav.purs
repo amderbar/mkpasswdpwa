@@ -1,7 +1,7 @@
 module Component.HeaderNav where
 
 import Prelude
-import Data.Routing (RouteHash(..), hashStr)
+import Effect.Routing (RouteHash(..), hashStr)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE

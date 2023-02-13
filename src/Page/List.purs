@@ -11,7 +11,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Data.States (FormData)
 import Component.HeaderNav as Nav
-import Data.Routing (RouteHash(..), hashStr)
+import Effect.Routing (RouteHash(..), hashStr)
 import Web.HTML as Web
 import Web.HTML.Window as Win
 

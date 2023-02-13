@@ -7,7 +7,7 @@ import Data.Array (null)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Routing (RouteHash(..), hashStr)
+import Effect.Routing (RouteHash(..), hashStr)
 import Data.Show.Generic (genericShow)
 import Data.States (FormData, initialForm)
 import Data.String as Str

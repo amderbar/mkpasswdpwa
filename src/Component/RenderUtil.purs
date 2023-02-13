@@ -4,7 +4,7 @@ import Prelude
 import DOM.HTML.Indexed.StepValue (StepValue(..))
 import Data.Int (toNumber)
 import Data.Maybe (Maybe, fromMaybe, isJust)
-import Data.Routing (RouteHash(..), hashStr)
+import Effect.Routing (RouteHash(..), hashStr)
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
