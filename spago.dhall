@@ -12,7 +12,6 @@ You can edit this file as you like.
   , "dom-indexed"
   , "effect"
   , "either"
-  , "exists"
   , "foldable-traversable"
   , "foreign"
   , "gen"

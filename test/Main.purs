@@ -2,15 +2,14 @@ module Test.Main (main) where
 
 import Prelude
 
-import Data.Array.NonEmpty (singleton)
-import Data.Char.GenSource (digits, lowercases, members, mkGenSource, uppercases)
 import Data.Char.Subset (hiragana, symbols)
+import Data.GenSource (members)
 import Data.Count (fromCount)
 import Data.Foldable (elem, sum)
 import Data.Length (fromLength)
 import Data.Passwd (Passwd(..))
 import Data.Passwd.Gen (genPasswd)
-import Data.Policy (CharTypeConf)
+import Data.Policy (CharGenSrc(..), CharTypeConf)
 import Data.String (length) as Str
 import Data.String.CodeUnits (toCharArray)
 import Effect (Effect)
@@ -30,43 +29,43 @@ spec = do
 
     it "should be longer than the length specified in the policy" do
       quickCheck do
-        c <- arbitrary <#> { count: _, genSrc: digits }
-        p <- arbitrary <#> { length: _, required: singleton c }
+        c <- arbitrary <#> { count: _, genSrc: Digits }
+        p <- arbitrary <#> { length: _, required: pure c }
         (Passwd r) <- genPasswd p
         pure $ Str.length r >=? fromLength p.length
 
     it "should contain more digits than specified in the policy" do
       quickCheck do
-        c <- arbitrary <#> { count: _, genSrc: digits }
-        p <- arbitrary <#> { length: _, required: singleton c }
+        c <- arbitrary <#> { count: _, genSrc: Digits }
+        p <- arbitrary <#> { length: _, required: pure c }
         (Passwd r) <- genPasswd p
         pure $ countCharType c r >=? fromCount c.count
 
     it "should contain more capital letters than specified in the policy" do
       quickCheck do
-        c <- arbitrary <#> { count: _, genSrc: uppercases }
-        p <- arbitrary <#> { length: _, required: singleton c }
+        c <- arbitrary <#> { count: _, genSrc: UppercaseAlphabets }
+        p <- arbitrary <#> { length: _, required: pure c }
         (Passwd r) <- genPasswd p
         pure $ countCharType c r >=? fromCount c.count
 
     it "should contain more lowercase letters than specified in the policy" do
       quickCheck do
-        c <- arbitrary <#> { count: _, genSrc: lowercases }
-        p <- arbitrary <#> { length: _, required: singleton c }
+        c <- arbitrary <#> { count: _, genSrc: LowercaseAlphabets }
+        p <- arbitrary <#> { length: _, required: pure c }
         (Passwd r) <- genPasswd p
         pure $ countCharType c r >=? fromCount c.count
 
     it "should contain more symbols than specified in the policy" do
       quickCheck do
-        c <- arbitrary <#> { count: _, genSrc: mkGenSource symbols }
-        p <- arbitrary <#> { length: _, required: singleton c }
+        c <- arbitrary <#> { count: _, genSrc: Symbols symbols }
+        p <- arbitrary <#> { length: _, required: pure c }
         (Passwd r) <- genPasswd p
         pure $ countCharType c r >=? fromCount c.count
 
     it "should contain more hiragana than specified in the policy" do
       quickCheck do
-        c <- arbitrary <#> { count: _, genSrc: mkGenSource hiragana }
-        p <- arbitrary <#> { length: _, required: singleton c }
+        c <- arbitrary <#> { count: _, genSrc: Hiraganas hiragana }
+        p <- arbitrary <#> { length: _, required: pure c }
         (Passwd r) <- genPasswd p
         pure $ countCharType c r >=? fromCount c.count
 

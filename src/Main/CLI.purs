@@ -5,7 +5,6 @@ import Prelude
 import ArgParse.Basic (ArgParser, argument, choose, default, flagHelp, fromRecord, int, parseArgs, printArgError, separated, unfolded1, unformat)
 import Data.Array (drop)
 import Data.Array.NonEmpty (NonEmptyArray, fromArray)
-import Data.Char.GenSource (digits, lowercases, mkGenSource, uppercases)
 import Data.Char.Subset (SymbolChar, hiragana, symbols)
 import Data.Char.Subset (fromString) as SubsetChar
 import Data.Count (Count, toCountE)
@@ -13,7 +12,7 @@ import Data.Either (Either(..), note)
 import Data.Int (fromString) as Int
 import Data.Length (Length, toLengthE)
 import Data.Passwd.Gen (genPasswd)
-import Data.Policy (Policy, defaultPolicy)
+import Data.Policy (CharGenSrc(..), Policy, defaultPolicy)
 import Data.String (Pattern(..))
 import Data.String.NonEmpty (fromString) as NES
 import Effect (Effect)
@@ -61,11 +60,11 @@ policyArg =
         # unformat "INTEGER and [SYMBOLS]" case _ of
           [cnt] -> do
             c <- cnt # strToCountE
-            pure { count: c, genSrc: mkGenSource symbols }
+            pure { count: c, genSrc: Symbols symbols }
           [cnt, str] -> do
             c <- cnt # strToCountE
             s <- str # (SubsetChar.fromString (show >>> append "Invalid Symbol:") >=> fromArray >>> note "Expected NonEmpty SYMBOLS")
-            pure { count: c, genSrc: mkGenSource (s :: NonEmptyArray SymbolChar) }
+            pure { count: c, genSrc: Symbols (s :: NonEmptyArray SymbolChar) }
           _ -> Left "Expected INTEGER and SYMBOLS"
 
     hiraganaNum =
@@ -80,16 +79,16 @@ policyArg =
           [cnt, str] -> do
             c <- cnt # strToCountE
             s <- str # NES.fromString >>> note "Expected NonEmpty STRING"
-            pure { count: c, genSrc: mkGenSource s }
+            pure { count: c, genSrc: AnyChars "" s }
           _ -> Left "Expected INTEGER and NonEmpty STRING"
 
     charTypeConf =
       choose "required charactor types"
-        [ digitNumArg <#> { count: _, genSrc: digits }
-        , lowercaseNum <#> { count: _, genSrc: lowercases }
-        , capitalNum <#> { count: _, genSrc: uppercases }
+        [ digitNumArg <#> { count: _, genSrc: Digits }
+        , lowercaseNum <#> { count: _, genSrc: LowercaseAlphabets }
+        , capitalNum <#> { count: _, genSrc: UppercaseAlphabets }
         , symbolCharType
-        , hiraganaNum <#> { count: _, genSrc: mkGenSource hiragana }
+        , hiraganaNum <#> { count: _, genSrc: Hiraganas hiragana }
         , customCharType
         ]
   in

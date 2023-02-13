@@ -4,7 +4,7 @@ import Prelude
 
 import Control.Monad.Gen (oneOf)
 import Data.Array.NonEmpty (toArray, (:))
-import Data.Char.GenSource (arbitraryIn)
+import Data.GenSource (arbitraryIn)
 import Data.Count (fromCount)
 import Data.Foldable (sum)
 import Data.Length (fromLength)

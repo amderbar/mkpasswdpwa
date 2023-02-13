@@ -10,7 +10,6 @@ import Component.RenderUtil (classes, footerBtnArea, inputAddon, inputFormContai
 import Control.Monad.Error.Class (liftMaybe)
 import Data.Array (catMaybes, null, singleton)
 import Data.Array.NonEmpty (NonEmptyArray, fromArray, toArray)
-import Data.Char.GenSource (digits, lowercases, mkGenSource, uppercases)
 import Data.Char.Subset (SymbolChar, symbols, toString)
 import Data.Char.Subset (fromString) as SubsetChar
 import Data.Count (Count, toCountE)
@@ -22,7 +21,7 @@ import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (unwrap)
 import Data.Passwd (Passwd)
 import Data.Passwd.Gen (genPasswd)
-import Data.Policy (Policy, mkPolicy)
+import Data.Policy (CharGenSrc(..), Policy, mkPolicy)
 import Data.Show.Generic (genericShow)
 import Data.Switch (toMaybe, toSwitch)
 import Effect.Aff.Class (class MonadAff)
@@ -282,10 +281,10 @@ decodeFormInput f = do
   symbolSet <- joinResult singleton f.symbolSet.result
   let confs =
         catMaybes
-          [ meybeIf digitIsOn digitCount <#> { count: _, genSrc: digits }
-          , meybeIf capitalIsOn capitalCount <#> { count: _, genSrc: uppercases }
-          , meybeIf lowercaseIsOn lowercaseCount <#> { count: _, genSrc: lowercases }
-          , meybeIf symbolIsOn symbolCount <#> { count: _, genSrc: mkGenSource symbolSet }
+          [ meybeIf digitIsOn digitCount <#> { count: _, genSrc: Digits }
+          , meybeIf capitalIsOn capitalCount <#> { count: _, genSrc: UppercaseAlphabets }
+          , meybeIf lowercaseIsOn lowercaseCount <#> { count: _, genSrc: LowercaseAlphabets }
+          , meybeIf symbolIsOn symbolCount <#> { count: _, genSrc: Symbols symbolSet }
           ]
   joinResult singleton $ Just (note EmptyCharSet $ mkPolicy length confs)
   where

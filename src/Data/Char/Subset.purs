@@ -1,7 +1,7 @@
 module Data.Char.Subset
   ( module Data.Char.Subset.Class
-  , module Data.Char.Subset.SymbolChar
   , module Data.Char.Subset.Hiragana
+  , module Data.Char.Subset.SymbolChar
   )
   where
 
