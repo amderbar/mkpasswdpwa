@@ -3,17 +3,18 @@ module Main.CLI (main) where
 import Prelude
 
 import ArgParse.Basic (ArgParser, argument, choose, default, flagHelp, fromRecord, int, parseArgs, printArgError, separated, unfolded1, unformat)
-import Data.Array (drop)
-import Data.Array.NonEmpty (NonEmptyArray, fromArray)
+import Data.Array (drop, head, uncons)
+import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Char.Subset (SymbolChar, hiragana, symbols)
-import Data.Char.Subset (fromString) as SubsetChar
+import Data.Char.Subset (fromNonEmptyString) as SubsetChar
 import Data.Count (Count, toCountE)
 import Data.Either (Either(..), note)
 import Data.Int (fromString) as Int
 import Data.Length (Length, toLengthE)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Passwd.Gen (genPasswd)
 import Data.Policy (CharGenSrc(..), Policy, defaultPolicy)
-import Data.String (Pattern(..))
+import Data.String.NonEmpty (NonEmptyString, Pattern(..))
 import Data.String.NonEmpty (fromString) as NES
 import Effect (Effect)
 import Effect.Console (log, logShow)
@@ -39,78 +40,85 @@ main = do
 policyArg :: ArgParser Policy
 policyArg =
   let
-    digitNumArg =
-      argument [ "--digit", "-d" ] "Minimum number of digits to include."
+    digitArg =
+      argument [ "--digit" ] "Sampling from Digits"
         # int
-        # countArg
+        # count
+        <#> { count: _, genSrc: Digits }
 
-    lowercaseNum =
-      argument [ "--lowercase", "-c" ] "Minimum number of lowercase characters to include."
+    uppercaseArg =
+      argument [ "--uppercase" ] "Sampling from Cppercase letters"
         # int
-        # countArg
+        # count
+        <#> { count: _, genSrc: UppercaseAlphabets }
 
-    capitalNum =
-      argument [ "--capital", "-C" ] "Minimum number of capital letters to include."
+    lowercaseArg =
+      argument [ "--lowercase" ] "Sampling from Lowercase letters"
         # int
-        # countArg
+        # count
+        <#> { count: _, genSrc: LowercaseAlphabets }
 
-    symbolCharType =
-      argument [ "--symbol", "-s" ] "Minimum number of symbols to include."
+    symbolArg =
+      argument [ "--symbol" ] "Sampling from Symbols"
         # separated "INTEGER [SYMBOLS]" (Pattern " ")
-        # unformat "INTEGER and [SYMBOLS]" case _ of
-          [cnt] -> do
+        # unformat "INTEGER and [SYMBOLS]" \arr -> case uncons arr of
+          Just { head: cnt, tail: rest } -> do
             c <- cnt # strToCountE
-            pure { count: c, genSrc: Symbols symbols }
-          [cnt, str] -> do
-            c <- cnt # strToCountE
-            s <- str # (SubsetChar.fromString (show >>> append "Invalid Symbol:") >=> fromArray >>> note "Expected NonEmpty SYMBOLS")
-            pure { count: c, genSrc: Symbols (s :: NonEmptyArray SymbolChar) }
-          _ -> Left "Expected INTEGER and SYMBOLS"
+            s <- (head rest) # maybe (pure symbols) (strToNonEmptyE >=> symbolCharsE)
+            pure { count: c, genSrc: Symbols s }
+          Nothing -> Left "Expected INTEGER and SYMBOLS"
 
-    hiraganaNum =
-      argument [ "--hiragana" ] "Minimum number of hiragana to include."
+    hiraganaArg =
+      argument [ "--hiragana" ] "Sampling from Hiraganas"
         # int
-        # countArg
+        # count
+        <#> { count: _, genSrc: Hiraganas hiragana }
 
-    customCharType =
-      argument [ "--custom" ] "Custom Charactor set."
+    customArg =
+      argument [ "--custom" ] "Sampling from Custom Charactor set."
         # separated "INTEGER STRING" (Pattern " ")
-        # unformat "INTEGER and NonEmpty STRING" case _ of
-          [cnt, str] -> do
+        # unformat "INTEGER and NonEmpty STRING" \arr -> case uncons arr of
+          Just { head: cnt, tail: rest } | Just str <- head rest -> do
             c <- cnt # strToCountE
-            s <- str # NES.fromString >>> note "Expected NonEmpty STRING"
-            pure { count: c, genSrc: AnyChars "" s }
+            s <- str # strToNonEmptyE
+            pure { count: c, genSrc: AnyChars s }
           _ -> Left "Expected INTEGER and NonEmpty STRING"
 
-    charTypeConf =
+    charTypeConfArg =
       choose "required charactor types"
-        [ digitNumArg <#> { count: _, genSrc: Digits }
-        , lowercaseNum <#> { count: _, genSrc: LowercaseAlphabets }
-        , capitalNum <#> { count: _, genSrc: UppercaseAlphabets }
-        , symbolCharType
-        , hiraganaNum <#> { count: _, genSrc: Hiraganas hiragana }
-        , customCharType
+        [ digitArg
+        , uppercaseArg
+        , lowercaseArg
+        , symbolArg
+        , hiraganaArg
+        , customArg
         ]
   in
     fromRecord
       { length:
           argument [ "--length", "-l" ] "Required length."
             # int
-            # lengthArg
+            # length
             # default defaultPolicy.length
       , required:
-          unfolded1 charTypeConf
+          unfolded1 charTypeConfArg
             # default defaultPolicy.required
       }
 
-lengthArg :: ArgParser Int -> ArgParser Length
-lengthArg = unformat "INTEGER" (toLengthE boundedIntErrorMsg)
+length :: ArgParser Int -> ArgParser Length
+length = unformat "LENGTH" (toLengthE boundedIntErrorMsg)
 
-countArg :: ArgParser Int -> ArgParser Count
-countArg = unformat "INTEGER" (toCountE boundedIntErrorMsg)
+count :: ArgParser Int -> ArgParser Count
+count = unformat "COUNT" (toCountE boundedIntErrorMsg)
 
 strToCountE :: String -> Either String Count
 strToCountE = Int.fromString >>> note "Expected INTEGER" >=> toCountE boundedIntErrorMsg
 
 boundedIntErrorMsg :: Int -> Int -> String
 boundedIntErrorMsg b t = "Expected INTEGER between " <> (show b) <> " to " <> (show t)
+
+strToNonEmptyE :: String -> Either String NonEmptyString
+strToNonEmptyE = NES.fromString >>> note "Expected NonEmpty STRING"
+
+symbolCharsE :: NonEmptyString -> Either String (NonEmptyArray SymbolChar)
+symbolCharsE = SubsetChar.fromNonEmptyString (show >>> append "Invalid Symbol:")

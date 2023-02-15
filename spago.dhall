@@ -30,6 +30,7 @@ You can edit this file as you like.
   , "strings"
   , "transformers"
   , "tuples"
+  , "unfoldable"
   , "web-html"
   , "web-storage"
   , "web-uievents"

@@ -14,15 +14,13 @@ import Data.String.NonEmpty.CodeUnits (toNonEmptyCharArray)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
-type GenSrcName = String
-
 data CharGenSrc
   = Digits
   | UppercaseAlphabets
   | LowercaseAlphabets
   | Symbols (NonEmptyArray SymbolChar)
   | Hiraganas (NonEmptyArray Hiragana)
-  | AnyChars GenSrcName NonEmptyString
+  | AnyChars NonEmptyString
 
 instance genSourceSubsetChar :: GenSource CharGenSrc Char where
   members = case _ of
@@ -31,7 +29,7 @@ instance genSourceSubsetChar :: GenSource CharGenSrc Char where
     LowercaseAlphabets -> toNonEmptyCharArray $ nes (Proxy :: Proxy "abcdefghijklmnopqrstuvwxyz")
     Symbols cs -> members cs
     Hiraganas cs -> members cs
-    AnyChars _ cs -> members cs
+    AnyChars cs -> members cs
 
   arbitraryIn = case _ of
     Digits -> genDigitChar
@@ -39,7 +37,7 @@ instance genSourceSubsetChar :: GenSource CharGenSrc Char where
     LowercaseAlphabets -> genAlphaLowercase
     Symbols cs -> arbitraryIn cs
     Hiraganas cs -> arbitraryIn cs
-    AnyChars _ cs -> arbitraryIn cs
+    AnyChars cs -> arbitraryIn cs
 
 type CharTypeConf
   = { count :: Count
@@ -55,15 +53,17 @@ mkPolicy :: Length -> Array CharTypeConf -> Maybe Policy
 mkPolicy length confs = { length, required: _ } <$> fromArray confs
 
 defaultPolicy :: Policy
-defaultPolicy = unsafePartial $ fromJust $ do
-  len <- toLength 9
-  digitsCnt <- toCount 2
-  uppercasesCnt <- toCount 2
-  lowercasesCnt <- toCount 2
-  symbolsCnt <- toCount 1
-  mkPolicy len
-    [ { count: digitsCnt, genSrc: Digits }
-    , { count: uppercasesCnt, genSrc: UppercaseAlphabets }
-    , { count: lowercasesCnt, genSrc: LowercaseAlphabets }
-    , { count: symbolsCnt, genSrc: Symbols symbols }
-    ]
+defaultPolicy =
+  unsafePartial $ fromJust
+    $ do
+        len <- toLength 9
+        digitsCnt <- toCount 2
+        uppercasesCnt <- toCount 2
+        lowercasesCnt <- toCount 2
+        symbolsCnt <- toCount 1
+        mkPolicy len
+          [ { count: digitsCnt, genSrc: Digits }
+          , { count: uppercasesCnt, genSrc: UppercaseAlphabets }
+          , { count: lowercasesCnt, genSrc: LowercaseAlphabets }
+          , { count: symbolsCnt, genSrc: Symbols symbols }
+          ]
