@@ -6,8 +6,11 @@ module Data.Length
   ) where
 
 import Prelude
+
+import Control.Monad.Error.Class (liftEither)
 import Control.Monad.Gen (chooseInt)
 import Data.Either (Either, note)
+import Data.Int.Interval (class IntInterval)
 import Data.Maybe (Maybe(..))
 import Test.QuickCheck.Arbitrary (class Arbitrary)
 
@@ -53,3 +56,7 @@ instance arbitaryLength :: Arbitrary Length where
       Length t = top
     in
       Length <$> (chooseInt b t)
+
+instance intIntervalLngth :: IntInterval Length where
+  toInt = fromLength
+  fromInt e = liftEither <<< toLengthE e
