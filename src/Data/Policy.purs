@@ -4,53 +4,65 @@ import Prelude
 
 import Data.Array.NonEmpty (NonEmptyArray, fromArray)
 import Data.Char.Gen (genAlphaLowercase, genAlphaUppercase, genDigitChar)
-import Data.Char.Subset (Hiragana, SymbolChar, symbols)
+import Data.Char.Subset (Hiragana, SymbolChar, hiragana, symbols, toChar)
 import Data.Count (Count, toCount)
+import Data.FunctorB (class FunctorB)
 import Data.GenSource (class GenSource, arbitraryIn, members)
 import Data.Length (Length, toLength)
-import Data.Maybe (Maybe, fromJust)
-import Data.String.NonEmpty (NonEmptyString, nes)
-import Data.String.NonEmpty.CodeUnits (toNonEmptyCharArray)
+import Data.Maybe (fromJust)
+import Data.String.NonEmpty (nes)
 import Partial.Unsafe (unsafePartial)
 import Type.Proxy (Proxy(..))
 
-data CharGenSrc
+data CharGenSrc wrap
   = Digits
   | UppercaseAlphabets
   | LowercaseAlphabets
-  | Symbols (NonEmptyArray SymbolChar)
-  | Hiraganas (NonEmptyArray Hiragana)
-  | AnyChars NonEmptyString
+  | Symbols (wrap SymbolChar)
+  | Hiraganas (wrap Hiragana)
+  | AnyChars (wrap Char)
 
-instance genSourceSubsetChar :: GenSource CharGenSrc Char where
+instance genSourceSubsetChar :: GenSource (CharGenSrc NonEmptyArray) Char where
   members = case _ of
-    Digits -> toNonEmptyCharArray $ nes (Proxy :: Proxy "1234567890")
-    UppercaseAlphabets -> toNonEmptyCharArray $ nes (Proxy :: Proxy "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-    LowercaseAlphabets -> toNonEmptyCharArray $ nes (Proxy :: Proxy "abcdefghijklmnopqrstuvwxyz")
-    Symbols cs -> members cs
-    Hiraganas cs -> members cs
+    Digits -> members $ nes (Proxy :: Proxy "1234567890")
+    UppercaseAlphabets -> members $ nes (Proxy :: Proxy "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    LowercaseAlphabets -> members $ nes (Proxy :: Proxy "abcdefghijklmnopqrstuvwxyz")
+    Symbols cs -> members (toChar <$> cs)
+    Hiraganas cs -> members (toChar <$> cs)
     AnyChars cs -> members cs
 
   arbitraryIn = case _ of
     Digits -> genDigitChar
     UppercaseAlphabets -> genAlphaUppercase
     LowercaseAlphabets -> genAlphaLowercase
-    Symbols cs -> arbitraryIn cs
-    Hiraganas cs -> arbitraryIn cs
+    Symbols cs -> arbitraryIn (toChar <$> cs)
+    Hiraganas cs -> arbitraryIn (toChar <$> cs)
     AnyChars cs -> arbitraryIn cs
+
+instance functorBGenSource :: FunctorB CharGenSrc where
+  bmap nt = case _ of
+    Digits -> Digits
+    UppercaseAlphabets -> UppercaseAlphabets
+    LowercaseAlphabets -> LowercaseAlphabets
+    Symbols cs -> Symbols (nt cs)
+    Hiraganas cs -> Hiraganas (nt cs)
+    AnyChars cs -> AnyChars (nt cs)
+
+defaultSymbols ∷ CharGenSrc NonEmptyArray
+defaultSymbols = Symbols symbols
+
+defaultHiragana ∷ CharGenSrc NonEmptyArray
+defaultHiragana = Hiraganas hiragana
 
 type CharTypeConf
   = { count :: Count
-    , genSrc :: CharGenSrc
+    , genSrc :: CharGenSrc NonEmptyArray
     }
 
 type Policy
   = { length :: Length
     , required :: NonEmptyArray CharTypeConf
     }
-
-mkPolicy :: Length -> Array CharTypeConf -> Maybe Policy
-mkPolicy length confs = { length, required: _ } <$> fromArray confs
 
 defaultPolicy :: Policy
 defaultPolicy =
@@ -61,9 +73,10 @@ defaultPolicy =
         uppercasesCnt <- toCount 2
         lowercasesCnt <- toCount 2
         symbolsCnt <- toCount 1
-        mkPolicy len
+        req <- fromArray
           [ { count: digitsCnt, genSrc: Digits }
           , { count: uppercasesCnt, genSrc: UppercaseAlphabets }
           , { count: lowercasesCnt, genSrc: LowercaseAlphabets }
-          , { count: symbolsCnt, genSrc: Symbols symbols }
+          , { count: symbolsCnt, genSrc: defaultSymbols }
           ]
+        pure { length: len, required: req }

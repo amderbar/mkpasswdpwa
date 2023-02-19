@@ -16,6 +16,7 @@ import Data.Passwd.Gen (genPasswd)
 import Data.Policy (CharGenSrc(..), Policy, defaultPolicy)
 import Data.String.NonEmpty (NonEmptyString, Pattern(..))
 import Data.String.NonEmpty (fromString) as NES
+import Data.String.NonEmpty.CodeUnits (toNonEmptyCharArray)
 import Effect (Effect)
 import Effect.Console (log, logShow)
 import Node.Process (argv) as Process
@@ -80,7 +81,7 @@ policyArg =
         # unformat "INTEGER and NonEmpty STRING" \arr -> case uncons arr of
           Just { head: cnt, tail: rest } | Just str <- head rest -> do
             c <- cnt # strToCountE
-            s <- str # strToNonEmptyE
+            s <- str # strToNonEmptyE <#> toNonEmptyCharArray
             pure { count: c, genSrc: AnyChars s }
           _ -> Left "Expected INTEGER and NonEmpty STRING"
 
