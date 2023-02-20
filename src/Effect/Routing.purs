@@ -1,13 +1,19 @@
-module Data.Routing
+module Effect.Routing
   ( RouteHash(..)
   , forcusIdx
   , hashStr
   , menuHash
+  , routing
   ) where
+
+import Prelude
 
 import Data.Foldable (oneOf)
 import Data.Maybe (Maybe(..))
-import Prelude (class Eq, class Show, show, pure, (<>), (<<<), (<*), (*>), (<$>), (<$))
+import Effect (Effect)
+import Effect.Aff (Aff, launchAff_)
+import Effect.Class (liftEffect)
+import Routing.Hash (matches)
 import Routing.Match (Match, lit, int, end)
 
 data RouteHash
@@ -42,3 +48,13 @@ forcusIdx :: RouteHash -> Maybe Int
 forcusIdx = case _ of
   Store i -> Just i
   _ -> Nothing
+
+routing :: forall t. (RouteHash -> Aff t) -> Aff (Effect Unit)
+routing query = liftEffect $ matches menuHash handleMatches
+  where
+  handleMatches ∷ Maybe RouteHash -> RouteHash -> Effect Unit
+  handleMatches mOld new =
+    when (mOld /= Just new)
+      $ launchAff_
+      $ void
+      $ query new

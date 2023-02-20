@@ -6,13 +6,15 @@ module Data.Count
   ) where
 
 import Prelude
+
+import Control.Monad.Error.Class (liftEither)
 import Control.Monad.Gen (chooseInt)
 import Data.Either (Either, note)
+import Data.Int.Interval (class IntInterval)
 import Data.Maybe (Maybe(..))
 import Test.QuickCheck.Arbitrary (class Arbitrary)
 
-newtype Count
-  = Count Int
+newtype Count = Count Int
 
 toCount :: Int -> Maybe Count
 toCount i =
@@ -53,3 +55,7 @@ instance arbitaryCount :: Arbitrary Count where
       Count t = top
     in
       Count <$> (chooseInt b t)
+
+instance intIntervalLngth :: IntInterval Count where
+  toInt = fromCount
+  fromInt e = liftEither <<< toCountE e

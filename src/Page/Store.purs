@@ -7,7 +7,7 @@ import Data.Array (null)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Routing (RouteHash(..), hashStr)
+import Effect.Routing (RouteHash(..), hashStr)
 import Data.Show.Generic (genericShow)
 import Data.States (FormData, initialForm)
 import Data.String as Str
@@ -20,52 +20,39 @@ import Halogen.HTML.Properties as HP
 import Routing.Hash (setHash)
 import Type.Proxy (Proxy(..))
 
-type Slot id
-  = forall q. H.Slot q Output id
+type Slot id = forall q. H.Slot q Output id
 
-type Slots
-  = ( headerNav :: Nav.Slot Unit )
+type Slots = (headerNav :: Nav.Slot Unit)
 
 _headerNav = Proxy :: Proxy "headerNav"
 
-type Form (f :: Type -> Type -> Type -> Type)
-  = ( account :: f String ErrorCode String
-    , passwd :: f String ErrorCode String
-    , note :: f String ErrorCode String
-    )
+type Form (f :: Type -> Type -> Type -> Type) =
+  ( account :: f String ErrorCode String
+  , passwd :: f String ErrorCode String
+  , note :: f String ErrorCode String
+  )
 
-type FieldState
-  = Form F.FieldState
+type FieldState = Form F.FieldState
 
-type FieldAction
-  = Form (F.FieldAction Action)
+type FieldAction = Form (F.FieldAction Action)
 
-type FieldInput
-  = Form F.FieldInput
+type FieldInput = Form F.FieldInput
 
-type FieldResult
-  = Form F.FieldResult
+type FieldResult = Form F.FieldResult
 
-type FieldOutput
-  = Form F.FieldOutput
+type FieldOutput = Form F.FieldOutput
 
-type FormQuery query
-  = F.FormQuery query FieldInput FieldResult FieldOutput
+type FormQuery query = F.FormQuery query FieldInput FieldResult FieldOutput
 
-type FormOutput
-  = F.FormOutput FieldState Output
+type FormOutput = F.FormOutput FieldState Output
 
-type FormContext
-  = F.FormContext FieldState FieldAction Input Action
+type FormContext = F.FormContext FieldState FieldAction Input Action
 
-type State
-  = FormContext
+type State = FormContext
 
-type Input
-  = Unit
+type Input = Unit
 
-type Output
-  = FormData
+type Output = FormData
 
 data Action
   = Receive FormContext
@@ -132,11 +119,11 @@ component initialValues =
           ]
       ]
 
-  inputSingleLineText ::
-    FieldType ->
-    { result :: Maybe (Either ErrorCode String), value :: String | _ } ->
-    (_ -> Action) ->
-    H.ComponentHTML _ _ _
+  inputSingleLineText
+    :: FieldType
+    -> { result :: Maybe (Either ErrorCode String), value :: String | _ }
+    -> (_ -> Action)
+    -> H.ComponentHTML _ _ _
   inputSingleLineText ftype inp handleChange =
     let
       errArr = case inp.result of
@@ -151,11 +138,11 @@ component initialValues =
             inp.value
             handleChange
 
-  inputNote ::
-    FieldType ->
-    { result :: Maybe (Either ErrorCode String), value :: String | _ } ->
-    (_ -> Action) ->
-    H.ComponentHTML _ _ _
+  inputNote
+    :: FieldType
+    -> { result :: Maybe (Either ErrorCode String), value :: String | _ }
+    -> (_ -> Action)
+    -> H.ComponentHTML _ _ _
   inputNote ftype inp handleChange =
     let
       errArr = case inp.result of

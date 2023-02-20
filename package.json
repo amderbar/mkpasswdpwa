@@ -1,11 +1,13 @@
 {
   "name": "mkpasswdpwa",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "main": "index.js",
   "scripts": {
     "build": "spago bundle-app --main Main.SPA --to docs/app.js --minify",
-    "cli": "spago run --main Main.CLI",
+    "precli": "spago bundle-app --main Main.CLI --to bin/cli.mjs --minify --platform=node",
+    "cli": "node bin/cli.mjs",
     "watch": "npm run build -- --watch",
     "serve": "wds --node-resolve --app-index docs/index.html --root-dir docs --watch",
     "test": "spago test"
@@ -16,7 +18,7 @@
     "@web/dev-server": "^0.1.17",
     "esbuild": "^0.17.5",
     "purescript": "^0.15.0",
-    "purty": "^7.0.0",
+    "purs-tidy": "^0.9.2",
     "spago": "^0.20.3"
   }
 }

@@ -1,21 +1,19 @@
 module Component.HeaderNav where
 
 import Prelude
-import Data.Routing (RouteHash(..), hashStr)
+import Effect.Routing (RouteHash(..), hashStr)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 
-type Slot id
-  = forall q. H.Slot q Void id
+type Slot id = forall q. H.Slot q Void id
 
-type State
-  = { isMenuActive :: Boolean
-    }
+type State =
+  { isMenuActive :: Boolean
+  }
 
-data Action
-  = SetMenu Boolean
+data Action = SetMenu Boolean
 
 component :: forall q i o m. H.Component q i o m
 component =

@@ -1,63 +1,79 @@
 module Test.Main (main) where
 
 import Prelude
-import Data.Char.Symbols (symbols)
-import Data.Count (Count, fromCount)
-import Data.Either (Either(..))
-import Data.Foldable (class Foldable, elem, sum)
+
+import Data.Char.Subset (hiragana, symbols)
+import Data.GenSource (members)
+import Data.Count (fromCount)
+import Data.Foldable (elem, sum)
 import Data.Length (fromLength)
-import Data.Maybe (Maybe(..))
-import Data.Newtype (unwrap)
 import Data.Passwd (Passwd(..))
 import Data.Passwd.Gen (genPasswd)
-import Data.Policy (Policy)
-import Data.String (length)
+import Data.Policy (CharGenSrc(..), CharTypeConf)
+import Data.String (length) as Str
 import Data.String.CodeUnits (toCharArray)
 import Effect (Effect)
-import Effect.Aff (launchAff_)
-import Test.QuickCheck (Result, arbitrary, (<?>), (===), (>=?))
-import Test.QuickCheck.Gen (Gen)
-import Test.Spec (describe, it)
+import Effect.Aff (Aff, launchAff_)
+import Test.QuickCheck (arbitrary, (>=?))
+import Test.Spec (SpecT, describe, it)
 import Test.Spec.QuickCheck (quickCheck)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
 main :: Effect Unit
-main =
-  launchAff_
-    $ runSpec [ consoleReporter ] do
-        describe "Generated Passwd from Policy" do
-          it "should be longer than the length specified in the policy" do
-            quickCheck $ passwdProp chkLength
-          it "should contain more digits than specified in the policy" do
-            quickCheck $ passwdProp \p -> chkCharTypeNum (toCharArray "0123456789") p.digitNum
-          it "should contain more capital letters than specified in the policy" do
-            quickCheck $ passwdProp \p -> chkCharTypeNum (toCharArray "ABCDEFGHIJKLMNOPQRSTUVWXYZ") p.capitalNum
-          it "should contain more lowercase letters than specified in the policy" do
-            quickCheck $ passwdProp \p -> chkCharTypeNum (toCharArray "abcdefghijklmnopqrstuvwxyz") p.lowercaseNum
-          it "should contain more symbols than specified in the policy" do
-            quickCheck
-              $ passwdProp \p -> case p.symbolNum of
-                  Just { count, charset } -> chkCharTypeNum (unwrap <$> charset) (Just count)
-                  Nothing -> chkCharTypeNum (unwrap <$> symbols) Nothing
+main = launchAff_ (runSpec [ consoleReporter ] spec)
 
-passwdProp :: (Policy -> Passwd -> Result) -> Gen Result
-passwdProp chk = do
-  p <- arbitrary
-  case genPasswd p of
-    Right gen -> chk p <$> gen
-    Left err -> pure (true <?> err)
+spec :: forall m. Monad m => SpecT Aff Unit m Unit
+spec = do
+  describe "Generated Passwd from Policy" do
 
-chkLength :: Policy -> Passwd -> Result
-chkLength p (Passwd r) = length r >=? fromLength p.length
+    it "should be longer than the length specified in the policy" do
+      quickCheck do
+        c <- arbitrary <#> { count: _, genSrc: Digits }
+        p <- arbitrary <#> { length: _, required: pure c }
+        (Passwd r) <- genPasswd p
+        pure $ Str.length r >=? fromLength p.length
 
-chkCharTypeNum :: forall f. Foldable f => f Char -> Maybe Count -> Passwd -> Result
-chkCharTypeNum charset mCnt (Passwd p) = case mCnt of
-  Nothing -> countUp p === 0
-  Just cnt -> countUp p >=? fromCount cnt
-  where
-  countUp :: String -> Int
-  countUp =
+    it "should contain more digits than specified in the policy" do
+      quickCheck do
+        c <- arbitrary <#> { count: _, genSrc: Digits }
+        p <- arbitrary <#> { length: _, required: pure c }
+        (Passwd r) <- genPasswd p
+        pure $ countCharType c r >=? fromCount c.count
+
+    it "should contain more capital letters than specified in the policy" do
+      quickCheck do
+        c <- arbitrary <#> { count: _, genSrc: UppercaseAlphabets }
+        p <- arbitrary <#> { length: _, required: pure c }
+        (Passwd r) <- genPasswd p
+        pure $ countCharType c r >=? fromCount c.count
+
+    it "should contain more lowercase letters than specified in the policy" do
+      quickCheck do
+        c <- arbitrary <#> { count: _, genSrc: LowercaseAlphabets }
+        p <- arbitrary <#> { length: _, required: pure c }
+        (Passwd r) <- genPasswd p
+        pure $ countCharType c r >=? fromCount c.count
+
+    it "should contain more symbols than specified in the policy" do
+      quickCheck do
+        c <- arbitrary <#> { count: _, genSrc: Symbols symbols }
+        p <- arbitrary <#> { length: _, required: pure c }
+        (Passwd r) <- genPasswd p
+        pure $ countCharType c r >=? fromCount c.count
+
+    it "should contain more hiragana than specified in the policy" do
+      quickCheck do
+        c <- arbitrary <#> { count: _, genSrc: Hiraganas hiragana }
+        p <- arbitrary <#> { length: _, required: pure c }
+        (Passwd r) <- genPasswd p
+        pure $ countCharType c r >=? fromCount c.count
+
+countCharType :: CharTypeConf -> String -> Int
+countCharType { genSrc } =
+  let
+    charset = members genSrc
+  in
     toCharArray
       >>> map (\c -> if c `elem` charset then 1 else 0)
       >>> sum

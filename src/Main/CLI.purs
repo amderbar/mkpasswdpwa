@@ -1,15 +1,22 @@
 module Main.CLI (main) where
 
 import Prelude
-import ArgParse.Basic (ArgParser, argument, choose, default, flag, flagHelp, fromRecord, int, parseArgs, printArgError, unformat)
-import Data.Array (drop)
-import Data.Char.Symbols (symbols, toNonEmptySymbolCharArrray)
-import Data.Count (Count, fromCount, toCount)
+
+import ArgParse.Basic (ArgParser, argument, choose, default, flagHelp, fromRecord, int, parseArgs, printArgError, separated, unfolded1, unformat)
+import Data.Array (drop, head, uncons)
+import Data.Array.NonEmpty (NonEmptyArray)
+import Data.Char.Subset (SymbolChar, hiragana, symbols)
+import Data.Char.Subset (fromNonEmptyString) as SubsetChar
+import Data.Count (Count, toCountE)
 import Data.Either (Either(..), note)
-import Data.Length (Length, fromLength, toLength)
-import Data.Maybe (Maybe(..))
+import Data.Int (fromString) as Int
+import Data.Length (Length, toLengthE)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Passwd.Gen (genPasswd)
-import Data.Policy (Policy)
+import Data.Policy (CharGenSrc(..), Policy, defaultPolicy)
+import Data.String.NonEmpty (NonEmptyString, Pattern(..))
+import Data.String.NonEmpty (fromString) as NES
+import Data.String.NonEmpty.CodeUnits (toNonEmptyCharArray)
 import Effect (Effect)
 import Effect.Console (log, logShow)
 import Node.Process (argv) as Process
@@ -22,7 +29,7 @@ main = do
       argParser
         { header: "mkpasswdpwa"
         , desc: "Random string generation"
-        , parser: unformat "" genPasswd policyArg <* flagHelp
+        , parser: genPasswd <$> policyArg <* flagHelp
         }
   args <- Process.argv <#> drop 2
   case execParser args of
@@ -34,84 +41,85 @@ main = do
 policyArg :: ArgParser Policy
 policyArg =
   let
-    digitNumArg =
-      argument [ "--digit", "-d" ] "Minimum number of digits to include."
+    digitArg =
+      argument [ "--digit" ] "Sampling from Digits"
         # int
-        # default 2
-        # countArg
+        # count
+        <#> { count: _, genSrc: Digits }
 
-    lowercaseNum =
-      argument [ "--lowercase", "-c" ] "Minimum number of lowercase characters to include."
+    uppercaseArg =
+      argument [ "--uppercase" ] "Sampling from Cppercase letters"
         # int
-        # default 2
-        # countArg
+        # count
+        <#> { count: _, genSrc: UppercaseAlphabets }
 
-    capitalNum =
-      argument [ "--capital", "-C" ] "Minimum number of capital letters to include."
+    lowercaseArg =
+      argument [ "--lowercase" ] "Sampling from Lowercase letters"
         # int
-        # default 2
-        # countArg
+        # count
+        <#> { count: _, genSrc: LowercaseAlphabets }
 
-    symbolNum =
-      argument [ "--symbol", "-s" ] "Minimum number of symbols to include."
+    symbolArg =
+      argument [ "--symbol" ] "Sampling from Symbols"
+        # separated "INTEGER [SYMBOLS]" (Pattern " ")
+        # unformat "INTEGER and [SYMBOLS]" \arr -> case uncons arr of
+            Just { head: cnt, tail: rest } -> do
+              c <- cnt # strToCountE
+              s <- (head rest) # maybe (pure symbols) (strToNonEmptyE >=> symbolCharsE)
+              pure { count: c, genSrc: Symbols s }
+            Nothing -> Left "Expected INTEGER and SYMBOLS"
+
+    hiraganaArg =
+      argument [ "--hiragana" ] "Sampling from Hiraganas"
         # int
-        # default 1
-        # countArg
+        # count
+        <#> { count: _, genSrc: Hiraganas hiragana }
 
-    symbolSet =
-      argument [ "--symbol-set" ] "Avairable symbols to include."
-        # unformat "STR" toNonEmptySymbolCharArrray
+    customArg =
+      argument [ "--custom" ] "Sampling from Custom Charactor set."
+        # separated "INTEGER STRING" (Pattern " ")
+        # unformat "INTEGER and NonEmpty STRING" \arr -> case uncons arr of
+            Just { head: cnt, tail: rest } | Just str <- head rest -> do
+              c <- cnt # strToCountE
+              s <- str # strToNonEmptyE <#> toNonEmptyCharArray
+              pure { count: c, genSrc: AnyChars s }
+            _ -> Left "Expected INTEGER and NonEmpty STRING"
+
+    charTypeConfArg =
+      choose "required charactor types"
+        [ digitArg
+        , uppercaseArg
+        , lowercaseArg
+        , symbolArg
+        , hiraganaArg
+        , customArg
+        ]
   in
     fromRecord
       { length:
           argument [ "--length", "-l" ] "Required length."
             # int
-            # default 9
-            # lengthArg
-      , digitNum:
-          choose "digits"
-            [ Just <$> digitNumArg
-            , flag [ "-nd", "--no-digits" ] "exclude digits." $> Nothing
-            ]
-            # default (toCount 2)
-      , lowercaseNum:
-          choose "lowercase letters"
-            [ Just <$> lowercaseNum
-            , flag [ "-nc", "--no-lowercases" ] "exclude lowercase letters." $> Nothing
-            ]
-            # default (toCount 2)
-      , capitalNum:
-          choose "capital letters"
-            [ Just <$> capitalNum
-            , flag [ "-nC", "--no-capitals" ] "exclude capital letters." $> Nothing
-            ]
-            # default (toCount 2)
-      , symbolNum:
-          choose "symbols"
-            [ Just <$> fromRecord { count: symbolNum, charset: symbolSet }
-            , flag [ "-ns", "--no-symbols" ] "exclude symbols." $> Nothing
-            ]
-            # default ({ count: _, charset: symbols } <$> toCount 1)
+            # length
+            # default defaultPolicy.length
+      , required:
+          unfolded1 charTypeConfArg
+            # default defaultPolicy.required
       }
 
-lengthArg :: ArgParser Int -> ArgParser Length
-lengthArg = unformat "INT" (note msg <<< toLength)
-  where
-  msg =
-    let
-      b = fromLength bottom
+length :: ArgParser Int -> ArgParser Length
+length = unformat "LENGTH" (toLengthE boundedIntErrorMsg)
 
-      t = fromLength top
-    in
-      "Expected INT between " <> (show b) <> " to " <> (show t)
+count :: ArgParser Int -> ArgParser Count
+count = unformat "COUNT" (toCountE boundedIntErrorMsg)
 
-countArg :: ArgParser Int -> ArgParser Count
-countArg = unformat "INT" (note msg <<< toCount)
-  where
-  msg =
-    let
-      b = fromCount bottom
+strToCountE :: String -> Either String Count
+strToCountE = Int.fromString >>> note "Expected INTEGER" >=> toCountE boundedIntErrorMsg
 
-      t = fromCount top
-    in
-      "Expected INT between " <> (show b) <> " to " <> (show t)
+boundedIntErrorMsg :: Int -> Int -> String
+boundedIntErrorMsg b t = "Expected INTEGER between " <> (show b) <> " to " <> (show t)
+
+strToNonEmptyE :: String -> Either String NonEmptyString
+strToNonEmptyE = NES.fromString >>> note "Expected NonEmpty STRING"
+
+symbolCharsE :: NonEmptyString -> Either String (NonEmptyArray SymbolChar)
+symbolCharsE = SubsetChar.fromNonEmptyString (show >>> append "Invalid Symbol:")
