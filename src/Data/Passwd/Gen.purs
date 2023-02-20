@@ -34,7 +34,9 @@ genPasswd { length, required } =
     pure (Passwd $ fromCharArray passcode)
 
   tupleCharType :: CharTypeConf -> Tuple Int (Gen Char)
-  tupleCharType {count, genSrc} =
-    let cnt = fromCount count
-        gen = arbitraryIn genSrc
-    in Tuple cnt gen
+  tupleCharType { count, genSrc } =
+    let
+      cnt = fromCount count
+      gen = arbitraryIn genSrc
+    in
+      Tuple cnt gen

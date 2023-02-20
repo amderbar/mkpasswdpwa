@@ -4,8 +4,7 @@ module Effect.Routing
   , hashStr
   , menuHash
   , routing
-  )
-  where
+  ) where
 
 import Prelude
 

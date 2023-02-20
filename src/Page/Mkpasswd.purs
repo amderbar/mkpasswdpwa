@@ -22,26 +22,23 @@ import Halogen.HTML as HH
 import Test.QuickCheck.Gen (randomSampleOne)
 import Type.Proxy (Proxy(..))
 
-type Slot id
-  = forall q. H.Slot q Void id
+type Slot id = forall q. H.Slot q Void id
 
-type ChildSlots
-  = ( headerNav :: Nav.Slot Unit
-    )
+type ChildSlots =
+  ( headerNav :: Nav.Slot Unit
+  )
 
 slots :: { _headerNav :: Proxy "headerNav" }
 slots =
   { _headerNav: Proxy :: Proxy "headerNav" }
 
-type State
-  = { passwd :: Maybe Passwd
-    }
+type State =
+  { passwd :: Maybe Passwd
+  }
 
-type Input
-  = Unit
+type Input = Unit
 
-type Output
-  = Maybe Passwd
+type Output = Maybe Passwd
 
 data Action
   = Generate
@@ -59,7 +56,7 @@ component =
   render :: State -> H.ComponentHTML _ _ _
   render state =
     HH.main
-      [ classes $ maybe [] (const ["is-clipped"]) state.passwd ]
+      [ classes $ maybe [] (const [ "is-clipped" ]) state.passwd ]
       [ HH.slot slots._headerNav unit Nav.component unit absurd
       , formArea
       , footerBtnArea (const Generate)

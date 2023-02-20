@@ -19,11 +19,11 @@ import Page.Mkpasswd as MkpasswdPage
 import Page.Store as StorePage
 import Type.Proxy (Proxy(..))
 
-type State
-  = { route :: RouteHash
-    , session :: Maybe Passwd
-    , storage :: Array FormData
-    }
+type State =
+  { route :: RouteHash
+  , session :: Maybe Passwd
+  , storage :: Array FormData
+  }
 
 data Action
   = Load
@@ -31,14 +31,13 @@ data Action
   | Save StorePage.Output
   | Delete ListPage.DeleteTargetIdx
 
-data Query a
-  = ChangeHash RouteHash a
+data Query a = ChangeHash RouteHash a
 
-type Slots
-  = ( mkpasswdPage :: MkpasswdPage.Slot Unit
-    , listPage :: ListPage.Slot Unit
-    , storePage :: StorePage.Slot Unit
-    )
+type Slots =
+  ( mkpasswdPage :: MkpasswdPage.Slot Unit
+  , listPage :: ListPage.Slot Unit
+  , storePage :: StorePage.Slot Unit
+  )
 
 _mkpasswdPage = Proxy :: Proxy "mkpasswdPage"
 

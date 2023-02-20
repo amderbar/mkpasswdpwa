@@ -14,8 +14,7 @@ import Data.Int.Interval (class IntInterval)
 import Data.Maybe (Maybe(..))
 import Test.QuickCheck.Arbitrary (class Arbitrary)
 
-newtype Count
-  = Count Int
+newtype Count = Count Int
 
 toCount :: Int -> Maybe Count
 toCount i =

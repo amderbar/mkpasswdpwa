@@ -5,8 +5,7 @@ module Component.Form.InputBoundedInt
   , defultInput
   , proxy
   , slot
-  )
-  where
+  ) where
 
 import Prelude
 
@@ -31,17 +30,17 @@ type Slot slot output row =
 
 proxy = Proxy :: Proxy "InputBoundedInt"
 
-slot ::
-  forall action m slot t error output row.
-  Ord slot =>
-  MonadAff m =>
-  MonadError error t =>
-  IntInterval output =>
-  (ErrCase -> error) ->
-  slot ->
-  {| Input } ->
-  (t output -> action) ->
-  H.ComponentHTML action (Slot slot (t output) row) m
+slot
+  :: forall action m slot t error output row
+   . Ord slot
+  => MonadAff m
+  => MonadError error t
+  => IntInterval output
+  => (ErrCase -> error)
+  -> slot
+  -> { | Input }
+  -> (t output -> action)
+  -> H.ComponentHTML action (Slot slot (t output) row) m
 slot onErr id input = HH.slot proxy id (component onErr) input
 
 type Input =
@@ -57,7 +56,7 @@ data ErrCase
   = OutOfRange Int Int
   | InvalidInt
 
-defultInput :: {| Input }
+defultInput :: { | Input }
 defultInput =
   { id: Nothing
   , step: HP.Any
@@ -65,8 +64,7 @@ defultInput =
   , value: 0
   }
 
-data Action
-  = ValueInput String
+data Action = ValueInput String
 
 type State =
   { strValue :: String
@@ -74,30 +72,30 @@ type State =
   | Input
   }
 
-component ::
-  forall t e o m.
-  MonadAff m =>
-  MonadError e t =>
-  IntInterval o =>
-  (ErrCase -> e) ->
-  H.Component (Query (t o)) {| Input } (t o) m
+component
+  :: forall t e o m
+   . MonadAff m
+  => MonadError e t
+  => IntInterval o
+  => (ErrCase -> e)
+  -> H.Component (Query (t o)) { | Input } (t o) m
 component onErr =
   H.mkComponent
     { initialState: \inp@{ value } -> R.build (R.merge { strValue: show value, hasErr: false }) inp
     , render
     , eval:
-      H.mkEval $
-        H.defaultEval
-          { handleAction = handleAction
-          , handleQuery = handleQuery
-          }
+        H.mkEval $
+          H.defaultEval
+            { handleAction = handleAction
+            , handleQuery = handleQuery
+            }
     }
   where
   render :: State -> H.ComponentHTML _ _ _
   render { id, step, disabled, strValue, hasErr } =
     HH.input $
       [ HP.type_ HP.InputNumber
-      , classes ["input", if hasErr then "is-danger" else ""]
+      , classes [ "input", if hasErr then "is-danger" else "" ]
       , HP.value strValue
       , HE.onValueInput ValueInput
       , HP.step step
@@ -105,19 +103,19 @@ component onErr =
       , HP.min $ toNumber (bottom :: o)
       , HP.disabled disabled
       ]
-      <> fromMaybe [] (pure <<< HP.id <$> id)
+        <> fromMaybe [] (pure <<< HP.id <$> id)
 
   handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
   handleAction = case _ of
     ValueInput str -> do
       let ret = parseValue str
-      H.modify_ _ {strValue = str, hasErr = isLeft ret}
+      H.modify_ _ { strValue = str, hasErr = isLeft ret }
       H.raise (liftEither ret)
 
   handleQuery :: forall a. Query (t o) a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery (Validate reply) = do
     ret <- H.gets (_.strValue >>> parseValue)
-    H.modify_ _ {hasErr = isLeft ret}
+    H.modify_ _ { hasErr = isLeft ret }
     pure (Just $ reply $ liftEither ret)
 
   parseValue :: String -> Either e o

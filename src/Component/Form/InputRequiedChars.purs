@@ -79,10 +79,10 @@ component :: forall m. MonadAff m => H.Component Query Input Output m
 component =
   H.mkComponent
     { initialState: \inp ->
-      { confs: Map.fromFoldableWithIndex inp
-      , keySeq: length inp
-      , errMsg: Nothing
-      }
+        { confs: Map.fromFoldableWithIndex inp
+        , keySeq: length inp
+        , errMsg: Nothing
+        }
     , render
     , eval:
         H.mkEval $

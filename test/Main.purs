@@ -70,8 +70,9 @@ spec = do
         pure $ countCharType c r >=? fromCount c.count
 
 countCharType :: CharTypeConf -> String -> Int
-countCharType {genSrc} =
-  let charset = members genSrc
+countCharType { genSrc } =
+  let
+    charset = members genSrc
   in
     toCharArray
       >>> map (\c -> if c `elem` charset then 1 else 0)

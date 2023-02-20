@@ -8,8 +8,7 @@ module Component.Form.InputGenSource
   , proxy
   , slot
   , slot_
-  )
-  where
+  ) where
 
 import Prelude
 
@@ -32,27 +31,27 @@ import Record.Builder as R
 import Type.Proxy (Proxy(..))
 
 type Slot slot row =
-  ( "InputGenSource" :: H.Slot Query Result slot | row )
+  ("InputGenSource" :: H.Slot Query Result slot | row)
 
 proxy = Proxy :: Proxy "InputGenSource"
 
-slot ::
-  forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type).
-  Ord slot =>
-  MonadAff m =>
-  slot ->
-  {|Input} ->
-  (Result -> action) ->
-  H.ComponentHTML action (Slot slot row) m
+slot
+  :: forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type)
+   . Ord slot
+  => MonadAff m
+  => slot
+  -> { | Input }
+  -> (Result -> action)
+  -> H.ComponentHTML action (Slot slot row) m
 slot id input = HH.slot proxy id component input
 
-slot_ ::
-  forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type).
-  Ord slot =>
-  MonadAff m =>
-  slot ->
-  {|Input} ->
-  H.ComponentHTML action (Slot slot row) m
+slot_
+  :: forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type)
+   . Ord slot
+  => MonadAff m
+  => slot
+  -> { | Input }
+  -> H.ComponentHTML action (Slot slot row) m
 slot_ id input = HH.slot_ proxy id component input
 
 isCustamizable :: forall c. CharGenSrc c -> Boolean
@@ -73,8 +72,8 @@ getValue = case _ of
   Hiraganas cs -> toString cs
   AnyChars cs -> toString cs
   where
-    membersStr :: CharGenSrc NonEmptyArray -> String
-    membersStr = toString <<< members
+  membersStr :: CharGenSrc NonEmptyArray -> String
+  membersStr = toString <<< members
 
 type Input =
   ( id :: Maybe String
@@ -82,7 +81,7 @@ type Input =
   , genSrc :: CharGenSrc Array
   )
 
-defaultInput :: {|Input}
+defaultInput :: { | Input }
 defaultInput =
   { id: Nothing
   , disabled: false
@@ -101,55 +100,56 @@ type State =
   | Input
   }
 
-data Action
-  = InputValue String
+data Action = InputValue String
 
-component :: forall m. MonadAff m => H.Component Query {|Input} Result m
+component :: forall m. MonadAff m => H.Component Query { | Input } Result m
 component =
   H.mkComponent
-    { initialState: \inp@{genSrc} ->
-      let value = getValue genSrc
-      in R.build (R.merge { value, hasErr: false }) inp
+    { initialState: \inp@{ genSrc } ->
+        let
+          value = getValue genSrc
+        in
+          R.build (R.merge { value, hasErr: false }) inp
     , render
     , eval:
-      H.mkEval $
-        H.defaultEval
-          { handleAction = handleAction
-          , handleQuery = handleQuery
-          }
+        H.mkEval $
+          H.defaultEval
+            { handleAction = handleAction
+            , handleQuery = handleQuery
+            }
     }
   where
   render :: State -> H.ComponentHTML _ _ _
-  render {id, disabled, genSrc, value, hasErr} =
+  render { id, disabled, genSrc, value, hasErr } =
     HH.div
       [ classes [ "control", "is-expanded" ] ]
       [ HH.input $
           [ HP.type_ HP.InputText
           , classes
-            [ "input"
-            , if hasErr then "is-danger" else ""
-            , if not (isCustamizable genSrc) then "has-text-grey" else ""
-            ]
+              [ "input"
+              , if hasErr then "is-danger" else ""
+              , if not (isCustamizable genSrc) then "has-text-grey" else ""
+              ]
           , HP.value value
           , HE.onValueInput InputValue
           , HP.readOnly $ not (isCustamizable genSrc)
           , HP.disabled disabled
           ]
-          <> fromMaybe [] (pure <<< HP.id <$> id)
+            <> fromMaybe [] (pure <<< HP.id <$> id)
       ]
 
   handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
   handleAction (InputValue str) = do
-    {genSrc} <- H.get
+    { genSrc } <- H.get
     let ret = validateCharSet str genSrc
-    H.modify_ _ {value = str, hasErr = isLeft ret}
+    H.modify_ _ { value = str, hasErr = isLeft ret }
     H.raise ret
 
   handleQuery :: forall a. Query a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery (Validate reply) = do
-    {genSrc, value} <- H.get
+    { genSrc, value } <- H.get
     let ret = validateCharSet value genSrc
-    H.modify_ _ {hasErr = isLeft ret}
+    H.modify_ _ { hasErr = isLeft ret }
     pure (Just $ reply ret)
 
 validateCharSet :: String -> CharGenSrc Array -> Result

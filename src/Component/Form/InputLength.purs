@@ -5,8 +5,7 @@ module Component.Form.InputLength
   , proxy
   , slot
   , slot_
-  )
-  where
+  ) where
 
 import Prelude
 
@@ -21,27 +20,27 @@ import Halogen.HTML as HH
 import Type.Proxy (Proxy(..))
 
 type Slot slot row =
-  ( "InputLength" :: H.Slot Query Output slot | row )
+  ("InputLength" :: H.Slot Query Output slot | row)
 
 proxy = Proxy :: Proxy "InputLength"
 
-slot ::
-  forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type).
-  Ord slot =>
-  MonadAff m =>
-  slot ->
-  Input ->
-  (Output -> action) ->
-  H.ComponentHTML action (Slot slot row) m
+slot
+  :: forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type)
+   . Ord slot
+  => MonadAff m
+  => slot
+  -> Input
+  -> (Output -> action)
+  -> H.ComponentHTML action (Slot slot row) m
 slot id input = HH.slot proxy id component input
 
-slot_ ::
-  forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type).
-  Ord slot =>
-  MonadAff m =>
-  slot ->
-  Input ->
-  H.ComponentHTML action (Slot slot row) m
+slot_
+  :: forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type)
+   . Ord slot
+  => MonadAff m
+  => slot
+  -> Input
+  -> H.ComponentHTML action (Slot slot row) m
 slot_ id input = HH.slot_ proxy id component input
 
 type Input = Int
@@ -57,29 +56,28 @@ type State =
   , errMsg :: Array ErrMsg
   }
 
-data Action
-  = Validated (Either ErrMsg Output)
+data Action = Validated (Either ErrMsg Output)
 
 component :: forall m. MonadAff m => H.Component Query Input Output m
 component =
   H.mkComponent
-    { initialState: {input: _, errMsg: []}
+    { initialState: { input: _, errMsg: [] }
     , render
     , eval:
-      H.mkEval $
-        H.defaultEval
-          { handleAction = handleAction
-          , handleQuery = handleQuery
-          }
+        H.mkEval $
+          H.defaultEval
+            { handleAction = handleAction
+            , handleQuery = handleQuery
+            }
     }
   where
   render :: State -> H.ComponentHTML _ _ _
-  render {input, errMsg} =
+  render { input, errMsg } =
     HH.div
       [ classes [ "field" ] ]
       [ HH.label
-        [ classes [ "label" ] ]
-        [ HH.text "Length" ]
+          [ classes [ "label" ] ]
+          [ HH.text "Length" ]
       , Validated # Base.slot errorMsg unit (Base.defultInput { value = input })
       , errorDisplay errMsg
       ]
@@ -91,7 +89,7 @@ component =
 
   handleAction :: Action -> H.HalogenM _ _ _ _ _ Unit
   handleAction (Validated ret) = do
-    H.modify_ _ {errMsg = errMsgArr (Just ret)}
+    H.modify_ _ { errMsg = errMsgArr (Just ret) }
     case ret of
       Right len -> H.raise len
       Left _ -> pure unit
@@ -99,7 +97,7 @@ component =
   handleQuery :: forall a. Query a -> H.HalogenM _ _ _ _ _ (Maybe a)
   handleQuery (GetResult reply) = do
     ret <- H.request Base.proxy unit Base.Validate
-    H.modify_ _ {errMsg = errMsgArr ret}
+    H.modify_ _ { errMsg = errMsgArr ret }
     pure $ reply <$> (hush =<< ret)
 
   errMsgArr :: Maybe (Either ErrMsg Output) -> Array ErrMsg

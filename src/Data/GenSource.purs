@@ -2,8 +2,7 @@ module Data.GenSource
   ( arbitraryIn
   , class GenSource
   , members
-  )
-  where
+  ) where
 
 import Prelude
 

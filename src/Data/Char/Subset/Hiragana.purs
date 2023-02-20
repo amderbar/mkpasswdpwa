@@ -11,8 +11,7 @@ import Data.String.NonEmpty (nes) as Str
 import Data.String.NonEmpty.CodeUnits (toNonEmptyCharArray)
 import Type.Proxy (Proxy(Proxy))
 
-newtype Hiragana
-  = Hiragana Char
+newtype Hiragana = Hiragana Char
 
 derive instance eqHiragana :: Eq Hiragana
 
@@ -23,10 +22,9 @@ instance subsetCharHiragana :: SubsetChar Hiragana where
   toChar (Hiragana c) = c
 
 hiragana :: NonEmptyArray Hiragana
-hiragana
- = Hiragana <$> (toNonEmptyCharArray $ Str.nes allHiragana)
+hiragana = Hiragana <$> (toNonEmptyCharArray $ Str.nes allHiragana)
   where
-    allHiragana = Proxy :: Proxy "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん"
+  allHiragana = Proxy :: Proxy "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん"
 
 toHiragana :: Char -> Maybe Hiragana
 toHiragana c = do

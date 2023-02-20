@@ -7,8 +7,7 @@ module Component.Form.InputCharTypeConf
   , slot
   , slot_
   , srcTypeLabel
-  )
-  where
+  ) where
 
 import Prelude
 
@@ -39,27 +38,27 @@ srcTypeLabel = case _ of
   AnyChars _ -> "Custom Charctor Set"
 
 type Slot slot row =
-  ( "InputCharTypeConf" :: H.Slot Query Output slot | row )
+  ("InputCharTypeConf" :: H.Slot Query Output slot | row)
 
 proxy = Proxy :: Proxy "InputCharTypeConf"
 
-slot ::
-  forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type).
-  Ord slot =>
-  MonadAff m =>
-  slot ->
-  {| Input } ->
-  (Output -> action) ->
-  H.ComponentHTML action (Slot slot row) m
+slot
+  :: forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type)
+   . Ord slot
+  => MonadAff m
+  => slot
+  -> { | Input }
+  -> (Output -> action)
+  -> H.ComponentHTML action (Slot slot row) m
 slot id input = HH.slot proxy id component input
 
-slot_ ::
-  forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type).
-  Ord slot =>
-  MonadAff m =>
-  slot ->
-  {| Input } ->
-  H.ComponentHTML action (Slot slot row) m
+slot_
+  :: forall (action :: Type) (m :: Type -> Type) (slot :: Type) (row :: Row Type)
+   . Ord slot
+  => MonadAff m
+  => slot
+  -> { | Input }
+  -> H.ComponentHTML action (Slot slot row) m
 slot_ id input = HH.slot_ proxy id component input
 
 type Input =
@@ -67,8 +66,8 @@ type Input =
   , genSrc :: CharGenSrc Array
   )
 
-mkInput :: CharTypeConf -> {|Input}
-mkInput {count: c, genSrc: s} =
+mkInput :: CharTypeConf -> { | Input }
+mkInput { count: c, genSrc: s } =
   { count: fromCount c
   , genSrc: toArray <~> s
   }
@@ -93,17 +92,17 @@ type State =
   | Input
   }
 
-component :: forall m. MonadAff m => H.Component Query {| Input } Output m
+component :: forall m. MonadAff m => H.Component Query { | Input } Output m
 component =
   H.mkComponent
     { initialState: R.build (R.merge { errMsg: [] })
     , render
     , eval:
-      H.mkEval $
-        H.defaultEval
-          { handleAction = handleAction
-          , handleQuery = handleQuery
-          }
+        H.mkEval $
+          H.defaultEval
+            { handleAction = handleAction
+            , handleQuery = handleQuery
+            }
     }
   where
   render :: State -> H.ComponentHTML _ _ _
@@ -111,19 +110,19 @@ component =
     HH.div
       [ classes [ "field" ] ]
       [ HH.label
-        [ classes [ "label", "is-flex", "is-align-items-center", "is-justify-content-space-between" ] ]
-        [ HH.text (srcTypeLabel genSrc)
-        , HH.button
-          [ classes ["delete", "is-small"]
-          , HE.onClick \_ -> DeleteConf
+          [ classes [ "label", "is-flex", "is-align-items-center", "is-justify-content-space-between" ] ]
+          [ HH.text (srcTypeLabel genSrc)
+          , HH.button
+              [ classes [ "delete", "is-small" ]
+              , HE.onClick \_ -> DeleteConf
+              ]
+              []
           ]
-          []
-        ]
       , HH.div
-        [ classes [ "field", "has-addons" ] ]
-        [ InputCount # InputCount.slot unit count
-        , InputGenSrc # InputGenSrc.slot unit InputGenSrc.defaultInput {genSrc = genSrc}
-        ]
+          [ classes [ "field", "has-addons" ] ]
+          [ InputCount # InputCount.slot unit count
+          , InputGenSrc # InputGenSrc.slot unit InputGenSrc.defaultInput { genSrc = genSrc }
+          ]
       , errorDisplay errMsg
       ]
 
@@ -152,11 +151,11 @@ component =
 joinResult :: forall e a. Maybe (Either e a) -> Either (Array e) a
 joinResult = case _ of
   Just (Right r) -> Right r
-  Just (Left e) -> Left [e]
+  Just (Left e) -> Left [ e ]
   Nothing -> Left []
 
 mkConfResult :: Maybe (Either ErrMsg Count) -> Maybe (Either ErrMsg (CharGenSrc NonEmptyArray)) -> Either (Array ErrMsg) CharTypeConf
 mkConfResult count genSrc = toEither $ ado
   c <- V $ joinResult count
   s <- V $ joinResult genSrc
-  in {count: c, genSrc: s}
+  in { count: c, genSrc: s }

@@ -54,15 +54,15 @@ defaultSymbols = Symbols symbols
 defaultHiragana ∷ CharGenSrc NonEmptyArray
 defaultHiragana = Hiraganas hiragana
 
-type CharTypeConf
-  = { count :: Count
-    , genSrc :: CharGenSrc NonEmptyArray
-    }
+type CharTypeConf =
+  { count :: Count
+  , genSrc :: CharGenSrc NonEmptyArray
+  }
 
-type Policy
-  = { length :: Length
-    , required :: NonEmptyArray CharTypeConf
-    }
+type Policy =
+  { length :: Length
+  , required :: NonEmptyArray CharTypeConf
+  }
 
 defaultPolicy :: Policy
 defaultPolicy =

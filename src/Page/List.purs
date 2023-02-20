@@ -15,19 +15,16 @@ import Effect.Routing (RouteHash(..), hashStr)
 import Web.HTML as Web
 import Web.HTML.Window as Win
 
-type Slot id
-  = forall q. H.Slot q DeleteTargetIdx id
+type Slot id = forall q. H.Slot q DeleteTargetIdx id
 
-type Input
-  = Array FormData
+type Input = Array FormData
 
-type DeleteTargetIdx
-  = Int
+type DeleteTargetIdx = Int
 
-type State
-  = { list :: Array FormData
-    , openMenuIndex :: Maybe Int
-    }
+type State =
+  { list :: Array FormData
+  , openMenuIndex :: Maybe Int
+  }
 
 data Action
   = Delete Int
@@ -50,8 +47,7 @@ component =
 initialState :: Input -> State
 initialState = { list: _, openMenuIndex: Nothing }
 
-type ChildSlots
-  = ( headerNav :: Nav.Slot Unit )
+type ChildSlots = (headerNav :: Nav.Slot Unit)
 
 _headerNav = Proxy :: Proxy "headerNav"
 
@@ -102,7 +98,8 @@ cardMenu :: forall i. Maybe Int -> Int -> HH.HTML i Action
 cardMenu mi i =
   HH.div
     [ HP.classes $ HH.ClassName
-        <$> [ "card-header-icon"
+        <$>
+          [ "card-header-icon"
           , "dropdown"
           , "is-right"
           , if mi == Just i then "is-active" else ""

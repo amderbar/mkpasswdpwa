@@ -14,8 +14,7 @@ import Data.Int.Interval (class IntInterval)
 import Data.Maybe (Maybe(..))
 import Test.QuickCheck.Arbitrary (class Arbitrary)
 
-newtype Length
-  = Length Int
+newtype Length = Length Int
 
 toLength :: Int -> Maybe Length
 toLength i =

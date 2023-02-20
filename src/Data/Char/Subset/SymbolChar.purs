@@ -11,8 +11,7 @@ import Data.String.NonEmpty (nes) as Str
 import Data.String.NonEmpty.CodeUnits (toNonEmptyCharArray)
 import Type.Proxy (Proxy(..))
 
-newtype SymbolChar
-  = SymbolChar Char
+newtype SymbolChar = SymbolChar Char
 
 derive instance eqSymbolChar :: Eq SymbolChar
 
@@ -26,7 +25,7 @@ symbols :: NonEmptyArray SymbolChar
 symbols =
   SymbolChar <$> (toNonEmptyCharArray $ Str.nes allSymbol)
   where
-    allSymbol = Proxy :: Proxy "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+  allSymbol = Proxy :: Proxy "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
 toSymbolChar :: Char -> Maybe SymbolChar
 toSymbolChar c = do

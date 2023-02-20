@@ -63,11 +63,11 @@ policyArg =
       argument [ "--symbol" ] "Sampling from Symbols"
         # separated "INTEGER [SYMBOLS]" (Pattern " ")
         # unformat "INTEGER and [SYMBOLS]" \arr -> case uncons arr of
-          Just { head: cnt, tail: rest } -> do
-            c <- cnt # strToCountE
-            s <- (head rest) # maybe (pure symbols) (strToNonEmptyE >=> symbolCharsE)
-            pure { count: c, genSrc: Symbols s }
-          Nothing -> Left "Expected INTEGER and SYMBOLS"
+            Just { head: cnt, tail: rest } -> do
+              c <- cnt # strToCountE
+              s <- (head rest) # maybe (pure symbols) (strToNonEmptyE >=> symbolCharsE)
+              pure { count: c, genSrc: Symbols s }
+            Nothing -> Left "Expected INTEGER and SYMBOLS"
 
     hiraganaArg =
       argument [ "--hiragana" ] "Sampling from Hiraganas"
@@ -79,11 +79,11 @@ policyArg =
       argument [ "--custom" ] "Sampling from Custom Charactor set."
         # separated "INTEGER STRING" (Pattern " ")
         # unformat "INTEGER and NonEmpty STRING" \arr -> case uncons arr of
-          Just { head: cnt, tail: rest } | Just str <- head rest -> do
-            c <- cnt # strToCountE
-            s <- str # strToNonEmptyE <#> toNonEmptyCharArray
-            pure { count: c, genSrc: AnyChars s }
-          _ -> Left "Expected INTEGER and NonEmpty STRING"
+            Just { head: cnt, tail: rest } | Just str <- head rest -> do
+              c <- cnt # strToCountE
+              s <- str # strToNonEmptyE <#> toNonEmptyCharArray
+              pure { count: c, genSrc: AnyChars s }
+            _ -> Left "Expected INTEGER and NonEmpty STRING"
 
     charTypeConfArg =
       choose "required charactor types"
