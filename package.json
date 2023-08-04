@@ -15,10 +15,10 @@
   "author": "amderbar",
   "license": "MIT",
   "devDependencies": {
-    "@web/dev-server": "^0.2.1",
-    "esbuild": "^0.17.5",
+    "@web/dev-server": "^0.3.0",
+    "esbuild": "^0.18.17",
     "purescript": "^0.15.0",
-    "purs-tidy": "^0.9.2",
+    "purs-tidy": "^0.10.0",
     "spago": "^0.21.0"
   }
 }
