@@ -5,20 +5,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "spago bundle-app --main Main.SPA --to docs/app.js --minify",
+    "build": "spago build && node bundle.mjs --main Main.SPA",
     "precli": "spago bundle-app --main Main.CLI --to bin/cli.mjs --minify --platform=node",
     "cli": "node bin/cli.mjs",
-    "watch": "npm run build -- --watch",
-    "serve": "wds --node-resolve --app-index docs/index.html --root-dir docs --watch",
+    "serve": "node bundle.mjs --serve --watch --main Main.SPA",
     "test": "spago test"
   },
   "author": "amderbar",
   "license": "MIT",
   "devDependencies": {
-    "@web/dev-server": "^0.3.0",
-    "esbuild": "^0.18.17",
+    "esbuild": "^0.20.0",
     "purescript": "^0.15.0",
     "purs-tidy": "^0.10.0",
-    "spago": "^0.21.0"
+    "spago": "^0.93.25"
   }
 }
