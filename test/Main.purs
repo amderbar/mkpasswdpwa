@@ -13,15 +13,15 @@ import Data.Policy (CharGenSrc(..), CharTypeConf)
 import Data.String (length) as Str
 import Data.String.CodeUnits (toCharArray)
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
+import Effect.Aff (Aff)
 import Test.QuickCheck (arbitrary, (>=?))
 import Test.Spec (SpecT, describe, it)
 import Test.Spec.QuickCheck (quickCheck)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (runSpec)
+import Test.Spec.Runner.Node (runSpecAndExitProcess)
 
 main :: Effect Unit
-main = launchAff_ (runSpec [ consoleReporter ] spec)
+main = runSpecAndExitProcess [ consoleReporter ] spec
 
 spec :: forall m. Monad m => SpecT Aff Unit m Unit
 spec = do
