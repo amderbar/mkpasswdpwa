@@ -1,5 +1,5 @@
 {
-	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"image": "mcr.microsoft.com/devcontainers/javascript-node:22",
 	"features": {
 		"ghcr.io/dhoeric/features/act:1": {}
 	},
@@ -7,6 +7,8 @@
 		"vscode": {
 			"extensions": [
 				"nwolverson.ide-purescript",
+				"GitHub.copilot",
+		                "GitHub.copilot-chat",
 				"github.vscode-github-actions"
 			]
 		}
