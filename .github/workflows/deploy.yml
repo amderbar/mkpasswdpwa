@@ -11,20 +11,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
         node-version: 'lts/*'
     - name: Cache dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: |
           node_modules
           .spago
           output
-        key: ${{ runner.os }}-purs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/packages.dhall') }}-${{ hashFiles('**/spago.dhall') }}
+        key: ${{ runner.os }}-purs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/spago.lock') }}-${{ hashFiles('**/spago.yaml') }}
         restore-keys: |
-          ${{ runner.os }}-purs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/packages.dhall') }}-
+          ${{ runner.os }}-purs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/spago.lock') }}-
           ${{ runner.os }}-purs-${{ hashFiles('**/package-lock.json') }}-
           ${{ runner.os }}-purs-
     - run: npm ci
