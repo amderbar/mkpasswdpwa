@@ -13,6 +13,7 @@
 /.purs*
 /.psa*
 /.spago
+/.spec-results
 /docs/app.js
 
 # IDE Settings
