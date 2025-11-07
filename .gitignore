@@ -15,6 +15,7 @@
 /.spago
 /.spec-results
 /docs/app.js
+/docs/app.css
 
 # IDE Settings
 /.vscode/

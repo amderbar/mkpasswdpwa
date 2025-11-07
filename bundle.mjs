@@ -17,7 +17,7 @@ const ctx = await esbuild.context({
     entryPoints: [`app/app.js`],
     bundle: true,
     platform: 'browser',
-    outfile: 'docs/app.js',
+    outdir: 'docs',
     minify: true,
 });
 
