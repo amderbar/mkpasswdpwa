@@ -14,7 +14,11 @@ const { values: args } = parseArgs({
 });
 
 const ctx = await esbuild.context({
-    entryPoints: [`app/app.js`],
+    // entryPoints をオブジェクトで指定して出力先フォルダを固定する
+    entryPoints: {
+        "js/app": "app/app.js",
+        "css/app": "app/app.css",
+    },
     bundle: true,
     platform: 'browser',
     outdir: 'docs',
@@ -22,6 +26,7 @@ const ctx = await esbuild.context({
     loader: {
         ".woff2": "file",
     },
+    assetNames: 'fonts/[name]',
 });
 
 await ctx.rebuild();
