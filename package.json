@@ -5,10 +5,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "spago build && node bundle.mjs --main Main.SPA",
+    "prebuild": "spago build",
+    "build": "node bundle.mjs",
     "precli": "spago bundle-app --main Main.CLI --to bin/cli.mjs --minify --platform=node",
     "cli": "node bin/cli.mjs",
-    "serve": "node bundle.mjs --serve --watch --main Main.SPA",
+    "serve": "node bundle.mjs --serve",
     "test": "spago test"
   },
   "author": "amderbar",
@@ -18,5 +19,9 @@
     "purescript": "^0.15.0",
     "purs-tidy": "^0.11.0",
     "spago": "^0.93.40"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
+    "bulma": "^1.0.4"
   }
 }

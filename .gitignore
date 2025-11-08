@@ -14,7 +14,9 @@
 /.psa*
 /.spago
 /.spec-results
-/docs/app.js
+/docs/js/
+/docs/css/
+/docs/fonts/
 
 # IDE Settings
 /.vscode/

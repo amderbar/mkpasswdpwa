@@ -5,16 +5,8 @@ import esbuild from "esbuild";
 
 const { values: args } = parseArgs({
     options: {
-        watch: {
-            type: "boolean",
-            multiple: false,
-        },
         serve: {
             type: "boolean",
-            multiple: false,
-        },
-        main: {
-            type: "string",
             multiple: false,
         },
     },
@@ -22,14 +14,19 @@ const { values: args } = parseArgs({
 });
 
 const ctx = await esbuild.context({
-    stdin: {
-        contents: `import { main } from "./output/${args.main}/index.js";main();`,
-        resolveDir: '.'
+    // entryPoints をオブジェクトで指定して出力先フォルダを固定する
+    entryPoints: {
+        "js/app": "app/app.js",
+        "css/app": "app/app.css",
     },
     bundle: true,
     platform: 'browser',
-    outfile: 'docs/app.js',
+    outdir: 'docs',
     minify: true,
+    loader: {
+        ".woff2": "file",
+    },
+    assetNames: 'fonts/[name]',
 });
 
 await ctx.rebuild();
@@ -38,12 +35,7 @@ if (args.serve) {
     await ctx.serve({
         servedir: 'docs',
     });
-}
-
-if (args.watch) {
     await ctx.watch();
-}
-
-if (!args.watch && !args.serve) {
+} else {
     await ctx.dispose();
 }
