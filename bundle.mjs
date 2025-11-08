@@ -19,6 +19,9 @@ const ctx = await esbuild.context({
     platform: 'browser',
     outdir: 'docs',
     minify: true,
+    loader: {
+        ".woff2": "file",
+    },
 });
 
 await ctx.rebuild();

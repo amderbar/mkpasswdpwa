@@ -16,6 +16,7 @@
 /.spec-results
 /docs/app.js
 /docs/app.css
+/docs/*.woff2
 
 # IDE Settings
 /.vscode/

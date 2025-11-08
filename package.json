@@ -21,6 +21,7 @@
     "spago": "^0.93.40"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "bulma": "^1.0.4"
   }
 }
