@@ -23,5 +23,11 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "bulma": "^1.0.4"
+  },
+  "allowScripts": {
+    "cpu-features@0.0.10": true,
+    "esbuild@0.28.1": true,
+    "purescript@0.15.16": true,
+    "ssh2@1.17.0": true
   }
 }
