@@ -4,7 +4,6 @@ import Prelude
 import DOM.HTML.Indexed.StepValue (StepValue(..))
 import Data.Int (toNumber)
 import Data.Maybe (Maybe, fromMaybe, isJust)
-import Effect.Routing (RouteHash(..), hashStr)
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
@@ -163,12 +162,11 @@ footerBtnArea onclick =
 resultModal
   :: forall slot action
    . { onclickClose :: (MouseEvent -> action)
-     , onclickSave :: (MouseEvent -> action)
      , onclickRegenerate :: (MouseEvent -> action)
      }
   -> Maybe String
   -> HH.HTML slot action
-resultModal { onclickClose, onclickSave, onclickRegenerate } result =
+resultModal { onclickClose, onclickRegenerate } result =
   HH.div
     [ classes [ "modal", if isJust result then "is-active" else "" ] ]
     [ HH.div
@@ -206,8 +204,8 @@ resultModal { onclickClose, onclickSave, onclickRegenerate } result =
             [ classes [ "modal-card-foot" ] ]
             [ HH.a
                 [ classes [ "button", "is-dark" ]
-                , HE.onClick onclickSave
-                , HP.href $ hashStr New
+                , HP.attr (HH.AttrName "aria-disabled") "true"
+                , HP.attr (HH.AttrName "title") "保存は廃止予定です。生成したパスワードは手動でコピーしてください。"
                 ]
                 [ HH.text "Save" ]
             , HH.button
