@@ -38,14 +38,11 @@ type State =
 
 type Input = Unit
 
-type Output = Maybe Passwd
-
 data Action
   = Generate
   | Clear
-  | Save
 
-component :: forall q m. MonadAff m => H.Component q Input Output m
+component :: forall q o m. MonadAff m => H.Component q Input o m
 component =
   H.mkComponent
     { initialState: const { passwd: Nothing }
@@ -62,7 +59,6 @@ component =
       , footerBtnArea (const Generate)
       , resultModal
           { onclickClose: const Clear
-          , onclickSave: const Save
           , onclickRegenerate: const Generate
           }
           (unwrap <$> state.passwd)
@@ -83,7 +79,6 @@ component =
   handleAction = case _ of
     Clear -> H.modify_ _ { passwd = Nothing }
     Generate -> runMaybeT handleGenerate >>= (pure <<< fromMaybe unit)
-    Save -> H.raise =<< H.gets _.passwd
 
   handleGenerate :: MaybeT (H.HalogenM _ _ _ _ _) Unit
   handleGenerate = do
