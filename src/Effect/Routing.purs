@@ -8,6 +8,7 @@ module Effect.Routing
 import Prelude
 
 import Data.Foldable (oneOf)
+import Data.Maybe (Maybe (Just))
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
