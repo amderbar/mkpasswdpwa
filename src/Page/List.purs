@@ -11,7 +11,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Data.States (FormData)
 import Component.HeaderNav as Nav
-import Effect.Routing (RouteHash(..), hashStr)
+import Effect.Routing (RouteHash, hashStr)
 import Web.HTML as Web
 import Web.HTML.Window as Win
 
@@ -110,7 +110,7 @@ cardMenu mi i =
         [ HP.classes $ HH.ClassName <$> [ "dropdown-menu" ] ]
         [ HH.div
             [ HP.classes $ HH.ClassName <$> [ "dropdown-content" ] ]
-            [ dropdownItem (Just $ Store i) (ToggleMenu i) "fa-pen-fancy" "edit"
+            [ dropdownItem Nothing (ToggleMenu i) "fa-pen-fancy" "edit"
             , dropdownItem Nothing (Delete i) "fa-trash-alt" "remove"
             ]
         ]
@@ -169,7 +169,8 @@ footerBtnArea =
       [ HP.classes $ HH.ClassName <$> [ "sticky-bottom", "p1", "is-pulled-right" ] ]
       [ HH.a
           [ HP.classes $ HH.ClassName <$> [ "button", "is-dark", "is-rounded" ]
-          , HP.href $ hashStr New
+          , HP.attr (HH.AttrName "aria-disabled") "true"
+          , HP.attr (HH.AttrName "title") "新規登録は廃止予定です。既存データはCSV出力でお手元に保存できます。"
           ]
           [ HH.span
               [ HP.classes $ HH.ClassName <$> [ "icon" ] ]
