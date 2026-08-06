@@ -91,7 +91,7 @@ spec = do
     it "should prepend a header row to the form data" do
       formDataToRows [ { account: "foo", passwd: "bar", note: "baz" } ]
         `shouldEqual`
-          [ [ "アカウント", "パスワード", "メモ" ], [ "foo", "bar", "baz" ] ]
+          [ [ "account", "passwd", "note" ], [ "foo", "bar", "baz" ] ]
 
 countCharType :: CharTypeConf -> String -> Int
 countCharType { genSrc } =

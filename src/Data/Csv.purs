@@ -32,6 +32,6 @@ encodeCsv rows = intercalate "\r\n" (map (intercalate "," <<< map encodeField) r
 -- | FormData の配列をヘッダ行付きの Array (Array String) に変換する。
 formDataToRows :: Array FormData -> Array (Array String)
 formDataToRows list =
-  [ [ "アカウント", "パスワード", "メモ" ] ] <> map toRow list
+  [ [ "account", "passwd", "note" ] ] <> map toRow list
   where
   toRow fd = [ fd.account, fd.passwd, fd.note ]
