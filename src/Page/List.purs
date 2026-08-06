@@ -4,8 +4,10 @@ import Prelude
 import Data.Array (mapWithIndex, null, catMaybes)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
+import Data.Time.Duration (Milliseconds(..))
 import Type.Proxy (Proxy(..))
-import Effect.Class (class MonadEffect)
+import Effect.Aff (delay)
+import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -40,7 +42,7 @@ data Action
   | GenerateCsv
   | CloseCsvExport
 
-component :: forall q m. MonadEffect m => H.Component q Input DeleteTargetIdx m
+component :: forall q m. MonadAff m => H.Component q Input DeleteTargetIdx m
 component =
   H.mkComponent
     { initialState
@@ -60,7 +62,7 @@ type ChildSlots = (headerNav :: Nav.Slot Unit)
 
 _headerNav = Proxy :: Proxy "headerNav"
 
-render :: forall m. MonadEffect m => State -> H.ComponentHTML Action ChildSlots m
+render :: forall m. MonadAff m => State -> H.ComponentHTML Action ChildSlots m
 render state =
   HH.main_
     [ HH.slot _headerNav unit Nav.component unit absurd
@@ -232,7 +234,7 @@ csvExportModal = case _ of
           ]
       ]
 
-handleAction :: forall m. MonadEffect m => Action -> H.HalogenM State Action ChildSlots DeleteTargetIdx m Unit
+handleAction :: forall m. MonadAff m => Action -> H.HalogenM State Action ChildSlots DeleteTargetIdx m Unit
 handleAction = case _ of
   Delete i -> do
     a <- H.liftEffect $ Web.window >>= Win.confirm "削除します。よろしいですか？"
@@ -249,5 +251,8 @@ handleAction = case _ of
     H.modify_ (_ { csvExport = Just { url, filename: "mkpasswdpwa.csv" } })
   CloseCsvExport -> do
     mExport <- _.csvExport <$> H.get
-    for_ mExport \{ url } -> H.liftEffect $ Url.revokeObjectURL url
     H.modify_ (_ { csvExport = Nothing })
+    -- ダウンロード開始前に Object URL を失効させないよう、解放はクリックの後に遅延させる。
+    for_ mExport \{ url } -> void $ H.fork do
+      H.liftAff $ delay $ Milliseconds 5000.0
+      H.liftEffect $ Url.revokeObjectURL url
