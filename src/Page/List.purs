@@ -70,7 +70,8 @@ render state =
         [ HH.div
             [ HP.classes $ HH.ClassName <$> [ "container" ] ]
             $ join
-                [ if null state.list then
+                [ [ deprecationBanner ]
+                , if null state.list then
                     emptyListView
                   else
                     mapWithIndex (accountRow state.openMenuIndex) state.list
@@ -78,6 +79,15 @@ render state =
                 ]
         ]
     , csvExportModal state.csvExport
+    ]
+
+deprecationBanner :: forall i p. HH.HTML i p
+deprecationBanner =
+  HH.div
+    [ HP.classes $ HH.ClassName <$> [ "notification", "is-warning", "is-light" ] ]
+    [ HH.p
+        [ HP.classes $ HH.ClassName <$> [ "mb0" ] ]
+        [ HH.text "この機能は将来廃止予定です。保存済みデータはCSV出力で保存し、別ツールへの移行をご検討ください。" ]
     ]
 
 accountRow :: forall i. Maybe Int -> Int -> FormData -> HH.HTML i Action
