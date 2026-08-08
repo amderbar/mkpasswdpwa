@@ -15,6 +15,7 @@ package:
     - halogen-formless
     - integers
     - maybe
+    - media-types
     - newtype
     - node-process
     - ordered-collections
@@ -32,6 +33,7 @@ package:
     - unfoldable
     - validation
     - web-events
+    - web-file
     - web-html
     - web-storage
     - web-uievents

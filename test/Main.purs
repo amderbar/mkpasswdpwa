@@ -3,6 +3,7 @@ module Test.Main (main) where
 import Prelude
 
 import Data.Char.Subset (hiragana, symbols)
+import Data.Csv (encodeCsv, encodeField, formDataToRows)
 import Data.GenSource (members)
 import Data.Count (fromCount)
 import Data.Foldable (elem, sum)
@@ -16,6 +17,7 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Test.QuickCheck (arbitrary, (>=?))
 import Test.Spec (SpecT, describe, it)
+import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.QuickCheck (quickCheck)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner.Node (runSpecAndExitProcess)
@@ -68,6 +70,28 @@ spec = do
         p <- arbitrary <#> { length: _, required: pure c }
         (Passwd r) <- genPasswd p
         pure $ countCharType c r >=? fromCount c.count
+
+  describe "Data.Csv" do
+
+    it "should quote fields containing commas" do
+      encodeField "a,b" `shouldEqual` "\"a,b\""
+
+    it "should escape double quotes" do
+      encodeField "say \"hi\"" `shouldEqual` "\"say \"\"hi\"\"\""
+
+    it "should quote fields containing newlines" do
+      encodeField "a\nb" `shouldEqual` "\"a\nb\""
+
+    it "should leave plain fields untouched" do
+      encodeField "plain" `shouldEqual` "plain"
+
+    it "should join rows with CRLF" do
+      encodeCsv [ [ "a", "b" ], [ "c", "d" ] ] `shouldEqual` "a,b\r\nc,d"
+
+    it "should prepend a header row to the form data" do
+      formDataToRows [ { account: "foo", passwd: "bar", note: "baz" } ]
+        `shouldEqual`
+          [ [ "account", "passwd", "note" ], [ "foo", "bar", "baz" ] ]
 
 countCharType :: CharTypeConf -> String -> Int
 countCharType { genSrc } =
