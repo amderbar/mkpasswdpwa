@@ -131,8 +131,7 @@ cardMenu mi i =
         [ HP.classes $ HH.ClassName <$> [ "dropdown-menu" ] ]
         [ HH.div
             [ HP.classes $ HH.ClassName <$> [ "dropdown-content" ] ]
-            [ dropdownItem Nothing (ToggleMenu i) "fa-pen-fancy" "edit"
-            , dropdownItem Nothing (Delete i) "fa-trash-alt" "remove"
+            [ dropdownItem Nothing (Delete i) "fa-trash-alt" "remove"
             ]
         ]
     ]
